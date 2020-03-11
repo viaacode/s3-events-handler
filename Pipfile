@@ -1,0 +1,20 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[[source]]
+name = "meemoo"
+url = "http://do-prd-mvn-01.do.viaa.be:8081/repository/pypi-all/simple"
+verify_ssl = false
+
+[dev-packages]
+pytest = "*"
+flake8 = "*"
+
+[packages]
+lxml = "*"
+viaa-chassis = "*"
+
+[requires]
+python_version = "3.6"

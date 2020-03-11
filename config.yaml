@@ -1,0 +1,12 @@
+rabbitmq:
+    host: mq-qas.do.viaa.be
+    port: 5672
+pid-service:
+    host: http://do-qas-mvn-01.do.viaa.be:8080/pid-prod
+file-transfer-service:
+    host: http://unknown
+mediahaven:
+    ftp:
+        host: ftp://dg-qas-ftp-01.dg.viaa.be
+        user: !ENV
+        passwd: !ENV
