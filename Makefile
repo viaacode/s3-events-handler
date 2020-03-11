@@ -3,15 +3,15 @@ SHELL:=/bin/bash
 
 .ONESHELL:
 
-.PHONY: init-venv
-init-venv:
-	@echo "[INIT-VENV]: Init virtual environment..."
-	python3 -m venv .
-
 .PHONY: make-help
 make-help:
 	@echo "Usage: $ make <target>"
 	@echo " TODO"
+
+.PHONY: init
+init:
+	@echo "[INIT]: Install pipenv..."
+	pip3 install pipenv
 
 .PHONY: install-req
 install-req:
@@ -37,13 +37,18 @@ tests:
 	@echo "[TESTS]: Running unittests..."
 	pipenv run pytest tests
 
+.PHONY: run
+run:
+	@echo "[RUN]: Run application..."
+	pipenv run python main.py
+
 .PHONY: mv-config
 mv-config:
 	@echo "[MV-CONFIG]: Rename 'config.yml.example' to 'config.yml'..."
 	cp config.yml.example config.yml
 
 .PHONY: all
-all: install lint test
+all: init install tests
 	@echo "***********************************************"
 	@echo "* Succes: see README.md for more information. *"
 	@echo "*         or do 'make help'                   *"
