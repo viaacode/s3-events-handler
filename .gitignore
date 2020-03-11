@@ -113,7 +113,6 @@ pyvenv.cfg
 pip-selfcheck.json
 
 # pipenv
-Pipfile.lock
 
 # Spyder project settings
 .spyderproject
