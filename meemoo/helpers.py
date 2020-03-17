@@ -82,7 +82,11 @@ class SidecarBuilder(object):
             node = etree.SubElement(root, "{%s}%s" % (self.MH_NAMESPACES['mhs'], top))
             # TODO: the subnodes under 'Dynamic' should not be namespaced!
             for sub, val in metadata_dict[top].items():
-                etree.SubElement(node, "{%s}%s" % (self.MH_NAMESPACES['mh'], sub)).text = val
+                if top == 'Technical':
+                    etree.SubElement(node, "{%s}%s" % (self.MH_NAMESPACES['mh'], sub)).text = val
+                if top == 'Dynamic':
+                    etree.SubElement(node, "%s" % sub).text = val
+
         self.sidecar = doc
     #
     def to_bytes(self, pretty=False) -> bytes:

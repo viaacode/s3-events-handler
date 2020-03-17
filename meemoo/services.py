@@ -96,5 +96,17 @@ class FileTransferService(Service):
         return True
 
 
+class OrganisationsService(Service):
+    """ Abstraction for the organisations-api. """
+    def __init__(self, ctx):
+        self.name   = 'organisations-api'
+        super().__init__(ctx)
+
+    def get_organisation(self, or_id):
+            resp = requests.get(f"{self.host}/{or_id}")
+
+            organisation = resp.json()["data"]
+
+
 # vim modeline
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4

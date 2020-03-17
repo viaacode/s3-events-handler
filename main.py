@@ -20,37 +20,28 @@ import os
 import sys
 import json
 import yaml
-import logging
 # 3d party imports
 import pika
+from viaa.configuration import ConfigParser
+from viaa.observability import logging
 # Local imports
 from meemoo.services import PIDService
 from meemoo.services import FileTransferService
+from meemoo.services import OrganisationsService
 from meemoo.events import Events
 from meemoo.helpers import SidecarBuilder, FTP, get_from_event
 from meemoo import Context
 
-# Get logger
-log = logging.getLogger('nano-bd')
-log.setLevel(logging.DEBUG)
-# create handler and set level
-ch = logging.StreamHandler(stream=sys.stdout)
-#~ ch = logging.FileHandler('./logging.log', mode='a')
-ch.setLevel(logging.DEBUG)
-# create formatter
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(lineno)d - %(levelname)s - %(message)s')
-# add formatter to ch
-ch.setFormatter(formatter)
-# add ch to logger
-log.addHandler(ch)
-
 # CONSTANTS
 CFGFILE = 'config.yaml'
+config = ConfigParser()
+log = logging.get_logger(__name__, config=config)
 
 
-def construct_destination_path():
+def construct_destination_path(cp_name):
     #return '/export/home/OR-rf5kf25/incoming/borndigital'
-    return '/tmp'   
+
+    return f"/{cp_name}/{ctx.config['destination-folder']}"
 
 def construct_fts_params_dict(event, dest_filename, dest_path, ctx):
     """"""
@@ -89,14 +80,8 @@ class MsgHandler(object):
     #
 
 def callback(ch, method, properties, body, ctx):
-    log.debug('Callback called')
-    #~ print(" [x] Received %r" % body)
-    #~ event = get_event_from_bbody(body)
+    event = json.loads(body)
 
-    from tests.resources import S3_MOCK_EVENT
-    event = json.loads(S3_MOCK_EVENT)
-    # Debug the correlation_id
-    log.debug(f'Correlation ID: {ctx.correlation_id}')
     # Get a pid from the PIDService
     pid_service     = PIDService(ctx)
     pid = pid_service.get_pid()
@@ -104,22 +89,37 @@ def callback(ch, method, properties, body, ctx):
 
     # Build the sidecar
     sidecar_builder = SidecarBuilder(ctx)
-    from tests.resources import METADATA_DICT as metadata_dict
+    metadata_dict = {
+        "Dynamic": {
+            "s3_object_key": event["records"][0]["s3"]["object"]["key"],
+            "s3_bucket": event["records"][0]["s3"]["bucket"]["name"],
+            "PID": pid
+        },
+        "Technical": {
+            "Md5": event["records"][0]["s3"]["object"]["eTag"]
+        }
+    }
+
     sidecar_builder.build(metadata_dict)
 
     # Send the sidecar to TRA-server
     # Get the sidecar XML representation as bytes
     sidecar_xml = sidecar_builder.to_bytes(pretty=True)
     log.debug(sidecar_xml.decode('utf-8'))
-    dest_path = construct_destination_path()
+
+    or_id = event["records"][0]["s3"]["bucket"]["metadata"]["tenant"]
+    org_service = OrganisationsService(ctx)
+    cp_name = org_service.get_organisation(or_id)["cp_name_mam"]
+
+    dest_path = construct_destination_path(cp_name)
     dest_filename = f'{pid}.xml'
     log.debug(f'Destination: path={dest_path}, file_name={dest_filename}')
+
     ftp_host = ctx.config['mediahaven']['ftp']['host']
     ftp = FTP(ftp_host, ctx)
     ftp.put(sidecar_xml, dest_path, dest_filename)
 
     # Request file transfer
-    dest_filename = 'a1b2c3d4e5.mxf'
     fts = FileTransferService(ctx)
     param_dict = construct_fts_params_dict(event, dest_filename, dest_path, ctx)
     log.debug(param_dict)
@@ -146,7 +146,7 @@ def main(ctx):
 
 if __name__ == '__main__':
     with open(CFGFILE, 'r') as yamlfile:
-        cfg = yaml.load(yamlfile, Loader=yaml.FullLoader)
+        cfg = yaml.load(yamlfile, Loader=yaml.UnsafeLoader)
     log.debug(f'Config read from {CFGFILE}')
     ctx = Context(cfg)
     main(ctx)

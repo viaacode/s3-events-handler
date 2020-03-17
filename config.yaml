@@ -10,3 +10,6 @@ mediahaven:
         host: ftp://dg-qas-ftp-01.dg.viaa.be
         user: !ENV
         passwd: !ENV
+organisation-api:
+    host: http://do-qas-esb-01.do.viaa.be:10003/api/
+destination-folder: DISK-SHARE-EVENTS
