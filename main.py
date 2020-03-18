@@ -146,7 +146,7 @@ def main(ctx):
 
 if __name__ == '__main__':
     with open(CFGFILE, 'r') as yamlfile:
-        cfg = yaml.load(yamlfile, Loader=yaml.UnsafeLoader)
+        cfg = yaml.load(yamlfile, Loader=yaml.FullLoader)
     log.debug(f'Config read from {CFGFILE}')
     ctx = Context(cfg)
     main(ctx)
