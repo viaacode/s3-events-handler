@@ -10,37 +10,38 @@
 
 # System imports
 import os
-import logging
 from io import BytesIO
 from ftplib import FTP as BuiltinFTP
 from urllib.parse import urlparse
 # Third-party imports
+from viaa.configuration import ConfigParser
+from viaa.observability import logging
 from lxml import etree
 # Local imports
 
 
 # Get logger
-log = logging.getLogger('nano-bd')
+config = ConfigParser()
+log = logging.get_logger(__name__, config=config)
 
 # Constants
 BASE_DOMAIN = 'viaa.be'
 
 def get_from_event(event, name):
-    keys = ['bucket', 'object_key', 'host', 'tenant']
+    keys = ['bucket', 'object_key', 'domain', 'tenant', 'user', 'md5']
     assert name in keys, f'Unknown key: "{name}"'
     if name == 'bucket':
         return event['Records'][0]['s3']['bucket']['name']
+    elif name == 'domain':
+        return event['Records'][0]['s3']['domain']['name']
     elif name == 'object_key':
         return event['Records'][0]['s3']['object']['key']
-    elif name == 'host':
-        host = '.'.join([
-            event['Records'][0]['s3']['bucket']['name'],
-            event['Records'][0]['s3']['domain']['name'],
-            BASE_DOMAIN
-        ])
-        return host
     elif name =='tenant':
         return event['Records'][0]['s3']['bucket']['metadata']['tenant']
+    elif name =='user':
+        return event['Records'][0]['userIdentity']['principalId']
+    elif name =='md5':
+        return event["Records"][0]["s3"]["object"]["metadata"]["x-md5sum-meta"]
 
 
 class SidecarBuilder(object):
@@ -51,7 +52,7 @@ class SidecarBuilder(object):
     """
     ALLOWED_NODES = ['Dynamic', 'Technical']
     XML_ENCODING  = 'UTF-8'
-    MHS_VERSION   = '19.4'
+    MHS_VERSION   = '19.2'
     MH_NAMESPACES = {
         "mhs": f"https://zeticon.mediahaven.com/metadata/{MHS_VERSION}/mhs/",
         "mh":  f"https://zeticon.mediahaven.com/metadata/{MHS_VERSION}/mh/"
@@ -62,7 +63,6 @@ class SidecarBuilder(object):
         self.ctx        = ctx
     #
     def check_metadata_dict(self, metadata_dict) -> bool:
-        # TODO: type annotation?
         """"""
         for k in metadata_dict:
             assert k in self.ALLOWED_NODES, f'Unknown sidecar node: "{k}"'
@@ -101,20 +101,25 @@ class SidecarBuilder(object):
 
 class FTP(object):
     """Abstraction for FTP"""
-    def __init__(self, host, ctx=None):
+    def __init__(self, ctx=None):
         self.ctx        = ctx
-        self.host       = self.__set_host(host)
+        self.host       = self.__set_host()
         self.conn       = self.__connect()
     #
-    def __set_host(self, host):
+
+    def __set_host(self):
         """"""
+        host = self.ctx.config.app_cfg['mediahaven']['ftp']['host']
         parts = urlparse(host)
         log.debug(f'FTP: scheme={parts.scheme}, host={parts.netloc}')
         return parts.netloc
 
+
     def __connect(self):
-        ftp_user = self.ctx.config['mediahaven']['ftp']['user']
-        ftp_passwd = self.ctx.config['mediahaven']['ftp']['passwd']
+        config = self.ctx.config.app_cfg
+        ftp_user = config['mediahaven']['ftp']['user']
+        ftp_passwd = config['mediahaven']['ftp']['passwd']
+
         try:
             conn = BuiltinFTP(host=self.host, user=ftp_user, passwd=ftp_passwd)
         except Exception as e:
@@ -127,9 +132,13 @@ class FTP(object):
     def put(self, content_bytes, destination_path, destination_filename):
         log.debug(f'Putting {destination_filename} to {destination_path} on {self.host}')
         with self.conn as conn:
-            conn.cwd(destination_path)
-            stor_cmd = f'STOR {destination_filename}'
-            conn.storbinary(stor_cmd, BytesIO(content_bytes))
+            try:
+                conn.cwd(destination_path)
+                stor_cmd = f'STOR {destination_filename}'
+                conn.storbinary(stor_cmd, BytesIO(content_bytes))
+            except Exception as exception:
+                log.critical(f"Failed to put sidecar on {self.host} {destination_path}")
+
 
 
 

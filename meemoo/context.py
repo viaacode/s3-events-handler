@@ -19,7 +19,7 @@ class Context(object):
     """
     def __init__(self, cfg=None):
         self.correlation_id = 'abc123'
-        self.dryrun         = True
+        self.dryrun         = cfg.app_cfg.get("environment", "development") != "production"
         self.config         = cfg
 
 

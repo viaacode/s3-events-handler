@@ -27,14 +27,15 @@ class Service(object):
     def __init__(self, ctx):
         self.name   = 'noname' if not self.name else self.name
         self.ctx    = ctx
+        self.config = ctx.config.app_cfg
         self.host   = self._get_service_host() 
 
     def _get_service_host(self):
         host = None
         try:
-            host = self.ctx.config[self.name]['host']
+            host = self.config[self.name]['host']
         except KeyError as e:
-            log.warn('Oeps')
+            log.warning('Oeps')
         else:
             log.debug(f'Host: {host}')
         return host
@@ -66,35 +67,9 @@ class PIDService(Service):
             pid = 'a1b2c3d4e5'
         else:
             resp = requests.get(self.host)
-            log.debug(f'Response is: {resp.json()}')
+            log.debug(f'Response is: {resp.raw}')
             pid = resp.json()[0]["id"]
         return pid
-
-
-class FileTransferService(Service):
-    """Abstraction to the generic file transfer service.
-    
-    See: <repo-url>
-    """
-    def __init__(self, ctx):
-        self.name   = 'file-transfer-service'
-        super().__init__(ctx)
-
-    def validate_params(self, param_dict):
-        """Check if the request conforms to the service's API."""
-        return True
-
-    def send_transfer_request(self, param_dict):
-        try:
-            self.validate_params(param_dict)
-        except ValidationError as e:
-            log.error('ValidationError')
-            raise
-        else:
-            #resp = requests.post(self.host, json.dumps(param_dict))
-            log.debug(f'Posting to {self.host}')
-        return True
-
 
 class OrganisationsService(Service):
     """ Abstraction for the organisations-api. """
@@ -103,9 +78,12 @@ class OrganisationsService(Service):
         super().__init__(ctx)
 
     def get_organisation(self, or_id):
-            resp = requests.get(f"{self.host}/{or_id}")
+            # Make sure the OR is uppercase. Organisation api needs it.
+            or_id = or_id[:2].upper() + or_id[2:]
 
-            organisation = resp.json()["data"]
+            response = requests.get(f"{self.host}org/{or_id}")
+            organisation = response.json()["data"]
+            return organisation
 
 
 # vim modeline

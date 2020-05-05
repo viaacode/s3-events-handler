@@ -24,111 +24,123 @@ import yaml
 import pika
 from viaa.configuration import ConfigParser
 from viaa.observability import logging
+from lxml import etree
 # Local imports
 from meemoo.services import PIDService
-from meemoo.services import FileTransferService
 from meemoo.services import OrganisationsService
 from meemoo.events import Events
 from meemoo.helpers import SidecarBuilder, FTP, get_from_event
 from meemoo import Context
 
-# CONSTANTS
-CFGFILE = 'config.yaml'
 config = ConfigParser()
 log = logging.get_logger(__name__, config=config)
 
 
-def construct_destination_path(cp_name):
-    #return '/export/home/OR-rf5kf25/incoming/borndigital'
+def construct_destination_path(cp_name, ctx):
+    return f"/{cp_name}/{ctx.config.app_cfg['destination-folder']}"
 
-    return f"/{cp_name}/{ctx.config['destination-folder']}"
 
-def construct_fts_params_dict(event, dest_filename, dest_path, ctx):
+def construct_fts_params_dict(event, pid, file_extension, dest_path, ctx):
     """"""
     return {
         "source": {
-            "host": get_from_event(event, 'host'),
-            "user": get_from_event(event, 'tenant'),
-            "password": "password",
-            "file": get_from_event(event, 'tenant'),
-            "path": get_from_event(event, 'object_key'),
-        }, 
-        "destination": {
-           "host": ctx.config['mediahaven']['ftp']['host'],
-           "user": get_from_event(event, 'tenant'),
-           "password": "password",
-           "file": dest_filename,
-           "path": dest_path
+            "domain": {
+                "name": get_from_event(event, "domain")
+            },
+            "bucket": {
+                "name": get_from_event(event, "bucket")
+            },
+            "object": {
+                "key": get_from_event(event, "object_key")
+            }
         },
-        "move": False
+        "destination": {
+            "path": f"/mnt/STORAGE/INGEST/SIDECAR{dest_path}/{pid}{file_extension}",
+            "host": ctx.config.app_cfg['mediahaven']['ftp']['host']
+        }
     }
 
 
-def get_event_from_bbody(body):
-    """Event body is bytes. Return a dict."""
-    return json.loads(body)
-
-def event_handler(event, context):
-    """Main event handler function"""
-    # Get the bucket (which conveniently also is the organisation ID)
-    bucket = get_from_event(event, 'bucket')
-
-class MsgHandler(object):
-    """"""
-    def __init__(self, ctx):
-        self.ctx    = ctx
-    #
-
 def callback(ch, method, properties, body, ctx):
-    event = json.loads(body)
+    try:
+        event = json.loads(body)
+    except json.JSONDecodeError as error:
+        log.warning("Bad s3 event.", error=str(error))
+        return
 
     # Get a pid from the PIDService
     pid_service     = PIDService(ctx)
     pid = pid_service.get_pid()
     log.info(f'PID received: {pid}')
 
-    # Build the sidecar
-    sidecar_builder = SidecarBuilder(ctx)
-    metadata_dict = {
-        "Dynamic": {
-            "s3_object_key": event["records"][0]["s3"]["object"]["key"],
-            "s3_bucket": event["records"][0]["s3"]["bucket"]["name"],
-            "PID": pid
-        },
-        "Technical": {
-            "Md5": event["records"][0]["s3"]["object"]["eTag"]
-        }
-    }
+    # # Build the sidecar
+    # sidecar_builder = SidecarBuilder(ctx)
+    # log.debug(f"Item md5: {event['Records'][0]['s3']['object']['metadata']['x-md5sum-meta']}")
+    # metadata_dict = {
+    #     "Dynamic": {
+    #         "s3_object_key": event["Records"][0]["s3"]["object"]["key"],
+    #         "s3_bucket": event["Records"][0]["s3"]["bucket"]["name"],
+    #         "PID": pid
+    #     },
+    #     "Technical": {
+    #         "Md5": event["Records"][0]["s3"]["object"]["metadata"]["x-md5sum-meta"]
+    #     }
+    # }
 
-    sidecar_builder.build(metadata_dict)
+    # sidecar_builder.build(metadata_dict)
 
-    # Send the sidecar to TRA-server
-    # Get the sidecar XML representation as bytes
-    sidecar_xml = sidecar_builder.to_bytes(pretty=True)
-    log.debug(sidecar_xml.decode('utf-8'))
+    # # Send the sidecar to TRA-server
+    # # Get the sidecar XML representation as bytes
+    # sidecar_xml = sidecar_builder.to_bytes(pretty=True)
+    # log.debug(sidecar_xml.decode('utf-8'))
 
-    or_id = event["records"][0]["s3"]["bucket"]["metadata"]["tenant"]
+    ###############################
+    # DIRTY MEDIAHAVEN WORKAROUND #
+    ###############################
+    root = etree.Element("MediaHAVEN_external_metadata")
+    etree.SubElement(root, "title").text = f"s3-test {pid}"
+
+    mdprops = etree.SubElement(root, "MDProperties")
+
+    etree.SubElement(mdprops, "CP").text = "VRT"
+    etree.SubElement(mdprops, "CP_id").text = "OR-rf5kf25"
+    etree.SubElement(mdprops, "PID").text = pid
+    etree.SubElement(mdprops, "md5").text = get_from_event(event, "md5")
+    etree.SubElement(mdprops, "s3_domain").text = get_from_event(event, "domain")
+    etree.SubElement(mdprops, "s3_bucket").text = get_from_event(event, "bucket")
+    etree.SubElement(mdprops, "s3_object_key").text = get_from_event(event, "object_key")
+    etree.SubElement(mdprops, "s3_object_owner").text = get_from_event(event, "user")
+
+    tree = etree.ElementTree(root)
+    sidecar_xml = etree.tostring(root, pretty_print=True,
+                           encoding='UTF-8',
+                           xml_declaration=True)
+
+    ###############################
+
+    or_id = get_from_event(event, "tenant")
     org_service = OrganisationsService(ctx)
     cp_name = org_service.get_organisation(or_id)["cp_name_mam"]
 
-    dest_path = construct_destination_path(cp_name)
+    dest_path = construct_destination_path(cp_name, ctx)
     dest_filename = f'{pid}.xml'
     log.debug(f'Destination: path={dest_path}, file_name={dest_filename}')
 
-    ftp_host = ctx.config['mediahaven']['ftp']['host']
-    ftp = FTP(ftp_host, ctx)
+    ftp = FTP(ctx)
     ftp.put(sidecar_xml, dest_path, dest_filename)
 
     # Request file transfer
-    fts = FileTransferService(ctx)
-    param_dict = construct_fts_params_dict(event, dest_filename, dest_path, ctx)
-    log.debug(param_dict)
-    result = fts.send_transfer_request(param_dict)
+    file_extension = os.path.splitext(event["Records"][0]["s3"]["object"]["key"])[1]
+    param_dict = construct_fts_params_dict(event, pid, file_extension, dest_path, ctx)
+
+    events = Events('outgoing_filetransfer', ctx)
+    events.publish(json.dumps(param_dict))
 
 
 def main(ctx):
-    events = Events('s3_events', ctx)
+    events = Events('incoming_s3_events', ctx)
     channel = events.get_channel()
+
     channel.basic_consume(
         queue=events.queue,
         # Adapt callback fn to add in the ctx parameter
@@ -136,19 +148,12 @@ def main(ctx):
         # Ack the message when the callback fn returns
         auto_ack=True
     )
-    print(' [*] Waiting for messages. To exit press CTRL+C')
     channel.start_consuming()
-    # TODO: override auto_ack 
-    #~ events.basic_consume(
-        #~ on_message_callback=callback
-    #~ )
 
 
 if __name__ == '__main__':
-    with open(CFGFILE, 'r') as yamlfile:
-        cfg = yaml.load(yamlfile, Loader=yaml.FullLoader)
-    log.debug(f'Config read from {CFGFILE}')
-    ctx = Context(cfg)
+    ctx = Context(config)
+
     main(ctx)
 
 
