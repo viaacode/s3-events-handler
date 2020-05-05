@@ -142,3 +142,4 @@ Session.vim
 *~
 # Auto-generated tag files
 tags
+.vscode/settings.json
