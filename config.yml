@@ -1,0 +1,20 @@
+viaa:
+    logging:
+        level: DEBUG
+app:
+    environment: !ENV ${APP_ENVIRONMENT}
+    rabbitmq:
+        user: !ENV ${RABBIT_MQ_USER}
+        passwd: !ENV ${RABBIT_MQ_PASSWD}
+        host: mq-qas.do.viaa.be
+        port: 5672
+    pid-service:
+        host: http://do-qas-mvn-01.do.viaa.be:8080/pid-qas
+    mediahaven:
+        ftp:
+            host: ftp://dg-qas-tra-01.dg.viaa.be/
+            user: !ENV ${MEDIAHAVEN_FTP_USER}
+            passwd: !ENV ${MEDIAHAVEN_FTP_PASSWD}
+    organisations-api:
+        host: http://do-qas-esb-01.do.viaa.be:10003/api/
+    destination-folder: DISK-SHARE-EVENTS
