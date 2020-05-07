@@ -11,6 +11,7 @@ verify_ssl = false
 [dev-packages]
 pytest = "*"
 flake8 = "*"
+black = "*"
 
 [packages]
 lxml = "*"
@@ -20,3 +21,6 @@ viaa-chassis = "==0.2.0rc1"
 
 [requires]
 python_version = "3"
+
+[pipenv]
+allow_prereleases = true

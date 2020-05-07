@@ -13,18 +13,20 @@
 #  ./main.py
 #
 #  See README.md
-#  
+#
 #######################################################################
 
 import os
 import sys
 import json
 import yaml
+
 # 3d party imports
 import pika
 from viaa.configuration import ConfigParser
 from viaa.observability import logging
 from lxml import etree
+
 # Local imports
 from meemoo.services import PIDService
 from meemoo.services import OrganisationsService
@@ -44,20 +46,14 @@ def construct_fts_params_dict(event, pid, file_extension, dest_path, ctx):
     """"""
     return {
         "source": {
-            "domain": {
-                "name": get_from_event(event, "domain")
-            },
-            "bucket": {
-                "name": get_from_event(event, "bucket")
-            },
-            "object": {
-                "key": get_from_event(event, "object_key")
-            }
+            "domain": {"name": get_from_event(event, "domain")},
+            "bucket": {"name": get_from_event(event, "bucket")},
+            "object": {"key": get_from_event(event, "object_key")},
         },
         "destination": {
             "path": f"/mnt/STORAGE/INGEST/SIDECAR{dest_path}/{pid}{file_extension}",
-            "host": ctx.config.app_cfg['mediahaven']['ftp']['host']
-        }
+            "host": ctx.config.app_cfg["mediahaven"]["ftp"]["host"],
+        },
     }
 
 
@@ -69,9 +65,9 @@ def callback(ch, method, properties, body, ctx):
         return
 
     # Get a pid from the PIDService
-    pid_service     = PIDService(ctx)
+    pid_service = PIDService(ctx)
     pid = pid_service.get_pid()
-    log.info(f'PID received: {pid}')
+    log.info(f"PID received: {pid}")
 
     # # Build the sidecar
     # sidecar_builder = SidecarBuilder(ctx)
@@ -108,13 +104,15 @@ def callback(ch, method, properties, body, ctx):
     etree.SubElement(mdprops, "md5").text = get_from_event(event, "md5")
     etree.SubElement(mdprops, "s3_domain").text = get_from_event(event, "domain")
     etree.SubElement(mdprops, "s3_bucket").text = get_from_event(event, "bucket")
-    etree.SubElement(mdprops, "s3_object_key").text = get_from_event(event, "object_key")
+    etree.SubElement(mdprops, "s3_object_key").text = get_from_event(
+        event, "object_key"
+    )
     etree.SubElement(mdprops, "s3_object_owner").text = get_from_event(event, "user")
 
     tree = etree.ElementTree(root)
-    sidecar_xml = etree.tostring(root, pretty_print=True,
-                           encoding='UTF-8',
-                           xml_declaration=True)
+    sidecar_xml = etree.tostring(
+        root, pretty_print=True, encoding="UTF-8", xml_declaration=True
+    )
 
     ###############################
 
@@ -123,8 +121,8 @@ def callback(ch, method, properties, body, ctx):
     cp_name = org_service.get_organisation(or_id)["cp_name_mam"]
 
     dest_path = construct_destination_path(cp_name, ctx)
-    dest_filename = f'{pid}.xml'
-    log.debug(f'Destination: path={dest_path}, file_name={dest_filename}')
+    dest_filename = f"{pid}.xml"
+    log.debug(f"Destination: path={dest_path}, file_name={dest_filename}")
 
     ftp = FTP(ctx)
     ftp.put(sidecar_xml, dest_path, dest_filename)
@@ -133,25 +131,27 @@ def callback(ch, method, properties, body, ctx):
     file_extension = os.path.splitext(event["Records"][0]["s3"]["object"]["key"])[1]
     param_dict = construct_fts_params_dict(event, pid, file_extension, dest_path, ctx)
 
-    events = Events('outgoing_filetransfer', ctx)
+    events = Events("outgoing_filetransfer", ctx)
     events.publish(json.dumps(param_dict))
 
 
 def main(ctx):
-    events = Events('incoming_s3_events', ctx)
+    events = Events("incoming_s3_events", ctx)
     channel = events.get_channel()
 
     channel.basic_consume(
         queue=events.queue,
         # Adapt callback fn to add in the ctx parameter
-        on_message_callback=lambda ch, method, properties, body: callback(ch, method, properties, body, ctx),
+        on_message_callback=lambda ch, method, properties, body: callback(
+            ch, method, properties, body, ctx
+        ),
         # Ack the message when the callback fn returns
-        auto_ack=True
+        auto_ack=True,
     )
     channel.start_consuming()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ctx = Context(config)
 
     main(ctx)

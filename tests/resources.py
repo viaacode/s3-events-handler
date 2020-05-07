@@ -14,7 +14,7 @@
 #
 #######################################################################
 
-S3_MOCK_EVENT = '''{  
+S3_MOCK_EVENT = """{  
    "Records":[
       {  
          "eventVersion":"0.1",
@@ -57,17 +57,15 @@ S3_MOCK_EVENT = '''{
          }
       }
    ]
-}'''
+}"""
 
 METADATA_DICT = {
-  "Dynamic": {
-    "s3_object_key": "191213-VAN___statement_De_ideale_wereld___Don_12_December_2019-1983-d5be522e-3609-417a-a1f4-5922854620c8.MXF",
-    "s3_bucket": "MAM_HighresVideo",
-    "PID": "a1b2c3d4e5"
-  },
-  "Technical": {
-    "Md5": "3d71f15f2d9ed0ef94d7fdc525c95e15"
-  }
+    "Dynamic": {
+        "s3_object_key": "191213-VAN___statement_De_ideale_wereld___Don_12_December_2019-1983-d5be522e-3609-417a-a1f4-5922854620c8.MXF",
+        "s3_bucket": "MAM_HighresVideo",
+        "PID": "a1b2c3d4e5",
+    },
+    "Technical": {"Md5": "3d71f15f2d9ed0ef94d7fdc525c95e15"},
 }
 
 # vim modeline

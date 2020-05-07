@@ -19,14 +19,15 @@ import unittest
 from meemoo.helpers import get_from_event
 from tests.resources import S3_MOCK_EVENT
 
+
 class TestHelperFunctions(unittest.TestCase):
-
     def test_get_from_event(self):
-        bucket = get_from_event(json.loads(S3_MOCK_EVENT), 'bucket')
-        self.assertEqual(bucket, 'MAM_HighresVideo')
+        bucket = get_from_event(json.loads(S3_MOCK_EVENT), "bucket")
+        self.assertEqual(bucket, "MAM_HighresVideo")
 
-if __name__ == '__main__':
-        unittest.main()
+
+if __name__ == "__main__":
+    unittest.main()
 
 
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4 smartindent

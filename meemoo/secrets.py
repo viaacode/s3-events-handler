@@ -2,18 +2,20 @@
 # -*- coding: utf-8 -*-
 #
 #  meemoo/secrets.py
-#  
+#
 #  Copyleft 2020 meemoo
-#  
+#
 #  @author: Maarten De Schrijver
-#  
+#
 
 # System imports
 import os
+
 # Third-party imports
 
 # Local imports
 from .vault import vault
+
 
 class Secrets(object):
     def __init__(self):
@@ -24,16 +26,17 @@ class Secrets(object):
             try:
                 value = vault.get_secret(key)
             except KeyError as e:
-                raise KeyError(f'Key {key} not available in Vault')
+                raise KeyError(f"Key {key} not available in Vault")
             else:
                 return value
         else:
             try:
                 value = os.environ[key]
             except KeyError as e:
-                raise KeyError(f'Key {key} not available in the environment')
+                raise KeyError(f"Key {key} not available in the environment")
             else:
                 return value
+
 
 secrets = Secrets()
 

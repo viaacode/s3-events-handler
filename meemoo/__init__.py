@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 #
 #  meemoo/__init__.py
-#  
+#
 #  Copyleft 2020 meemoo
-#  
+#
 #  @author: Maarten De Schrijver
-#  
+#
 
 # System imports
 
