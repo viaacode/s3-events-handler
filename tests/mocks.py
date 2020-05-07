@@ -3,6 +3,10 @@ import pytest
 
 @pytest.fixture
 def mock_ftp(monkeypatch):
+    def mock_connect(self):
+        print(f"Connecting to host.")
+        pass
+
     def mock_put(self, content_bytes, destination_path, destination_filename):
         print(f"Putting {destination_filename} to {destination_path} on {self.host}")
         pass
@@ -10,6 +14,7 @@ def mock_ftp(monkeypatch):
     from meemoo.helpers import FTP
 
     monkeypatch.setattr(FTP, "put", mock_put)
+    monkeypatch.setattr(FTP, "_FTP__connect", mock_connect)
 
 
 @pytest.fixture
@@ -24,13 +29,16 @@ def mock_organisations_api(monkeypatch):
 
 
 @pytest.fixture
-def mock_filetransfer_service(monkeypatch):
-    def mock_send_transfer_request(self, param_dict):
-        print(f"Putting message on the FXP service queue: {param_dict}")
-        return True
+def mock_events(monkeypatch):
+    def mock_init(self, name, ctx):
+        print(f"Initiating Rabbit connection.")
+        pass
 
-    from meemoo.services import FileTransferService
+    def mock_publish(self, message):
+        print(f"Publish message: {message}")
+        pass
 
-    monkeypatch.setattr(
-        FileTransferService, "send_transfer_request", mock_send_transfer_request
-    )
+    from meemoo.events import Events
+
+    monkeypatch.setattr(Events, "__init__", mock_init)
+    monkeypatch.setattr(Events, "publish", mock_publish)
