@@ -27,21 +27,37 @@ log = logging.get_logger(__name__, config=config)
 # Constants
 BASE_DOMAIN = 'viaa.be'
 
+def try_to_find_md5(object_metadata):
+    """Simple convenience function that allows to be able to try different
+    possible md5 field names (keys) and return it's value.
+    Args:
+        object_metadata (dict): The object metadata sub-section of the S3-event.
+    Returns:
+        str: The md5sum when found. An empty string ('') otherwise.
+    """
+    POSSIBLE_KEYS = ["x-md5sum-meta", "md5sum", "x-amz-meta-md5sum"]
+    for key in POSSIBLE_KEYS:
+        if key in object_metadata.keys():
+            log.debug(f"md5sum located in metadata-field: '{key}'")
+            return object_metadata[key]
+    return ""
+
 def get_from_event(event, name):
     keys = ['bucket', 'object_key', 'domain', 'tenant', 'user', 'md5']
     assert name in keys, f'Unknown key: "{name}"'
+    record = event['Records'][0]
     if name == 'bucket':
-        return event['Records'][0]['s3']['bucket']['name']
+        return record['s3']['bucket']['name']
     elif name == 'domain':
-        return event['Records'][0]['s3']['domain']['name']
+        return record['s3']['domain']['name']
     elif name == 'object_key':
-        return event['Records'][0]['s3']['object']['key']
+        return record['s3']['object']['key']
     elif name =='tenant':
-        return event['Records'][0]['s3']['bucket']['metadata']['tenant']
+        return record['s3']['bucket']['metadata']['tenant']
     elif name =='user':
-        return event['Records'][0]['userIdentity']['principalId']
+        return record['userIdentity']['principalId']
     elif name =='md5':
-        return event["Records"][0]["s3"]["object"]["metadata"]["x-md5sum-meta"]
+        return try_to_find_md5(record['s3']['object']['metadata'])
 
 
 class SidecarBuilder(object):
