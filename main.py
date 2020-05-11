@@ -132,7 +132,7 @@ def callback(ch, method, properties, body, ctx):
     param_dict = construct_fts_params_dict(event, pid, file_extension, dest_path, ctx)
 
     events = Events(ctx.config.app_cfg["rabbitmq"]["outgoing"], ctx)
-    events.publish(json.dumps(param_dict))
+    events.publish(json.dumps(param_dict), properties.correlation_id)
 
     return True
 

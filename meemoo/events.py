@@ -74,7 +74,7 @@ class Events(object):
             # TODO
         )
 
-    def publish(self, message):
+    def publish(self, message, correlation_id):
         log.debug(f"message to filetransfer {self.exchange}: {message}")
         self.channel.basic_publish(
             exchange=self.exchange,
@@ -82,6 +82,7 @@ class Events(object):
             body=message,
             properties=pika.BasicProperties(
                 delivery_mode=2,  # make message persistent
+                correlation_id=correlation_id
             ),
         )
 
