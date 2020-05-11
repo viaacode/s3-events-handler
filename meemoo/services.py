@@ -14,12 +14,14 @@ import json
 
 # Third-party imports
 import requests
+from viaa.configuration import ConfigParser
+from viaa.observability import logging
 
 # Local imports
 
-
 # Get logger
-log = logging.getLogger("nano-bd")
+config = ConfigParser()
+log = logging.get_logger(__name__, config=config)
 
 
 class Service(object):

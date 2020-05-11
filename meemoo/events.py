@@ -22,13 +22,6 @@ from viaa.observability import logging
 config = ConfigParser()
 log = logging.get_logger(__name__, config=config)
 
-# Constants
-EVENT_SERVICES = {
-    "incoming_s3_events": {"exchange": "s3.ingest", "queue_name": "s3.ingest"},
-    "outgoing_filetransfer": {"queue_name": "s3_to_remotefs"},
-}
-
-
 class Events(object):
     def __init__(self, queue_info, ctx):
         self.ctx = ctx
