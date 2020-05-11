@@ -34,7 +34,7 @@ def mock_events(monkeypatch):
         print(f"Initiating Rabbit connection.")
         pass
 
-    def mock_publish(self, message):
+    def mock_publish(self, message, correlation_id):
         print(f"Publish message: {message}")
         pass
 
