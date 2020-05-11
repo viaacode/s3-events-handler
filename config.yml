@@ -8,6 +8,12 @@ app:
         passwd: !ENV ${RABBIT_MQ_PASSWD}
         host: mq-qas.do.viaa.be
         port: 5672
+        incoming:
+            queue: !ENV ${S3_EVENTS_QUEUE}
+            exchange: !ENV ${S3_EVENTS_EXCHANGE}
+        outgoing:
+            queue: !ENV ${FILETRANSFER_QUEUE}
+            exchange: !ENV ${FILETRANSFER_EXCHANGE}
     pid-service:
         host: http://do-qas-mvn-01.do.viaa.be:8080/pid-qas
     mediahaven:

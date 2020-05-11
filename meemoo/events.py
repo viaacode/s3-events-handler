@@ -30,27 +30,14 @@ EVENT_SERVICES = {
 
 
 class Events(object):
-    def __init__(self, name, ctx):
-        self.name = name
+    def __init__(self, queue_info, ctx):
         self.ctx = ctx
-        self.queue = self._determine_queue()
-        self.exchange = self._determine_exchange()
+        self.queue = queue_info["queue"]
+        self.exchange = queue_info["exchange"]
         self.credentials = self._init_credentials()
         self.connection = self._init_connection()
         self.channel = self._init_channel()
         self._declare_queue()
-
-    def _determine_queue(self):
-        """"""
-        assert self.name in EVENT_SERVICES, f"{self.name} not known as a event service"
-        queue = EVENT_SERVICES[self.name]["queue_name"]
-        return queue
-
-    def _determine_exchange(self):
-        """"""
-        assert self.name in EVENT_SERVICES, f"{self.name} not known as a event service"
-        exchange = EVENT_SERVICES[self.name].get("exchange", "")
-        return exchange
 
     def _init_credentials(self):
         """"""

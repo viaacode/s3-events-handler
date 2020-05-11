@@ -131,12 +131,14 @@ def callback(ch, method, properties, body, ctx):
     file_extension = os.path.splitext(event["Records"][0]["s3"]["object"]["key"])[1]
     param_dict = construct_fts_params_dict(event, pid, file_extension, dest_path, ctx)
 
-    events = Events("outgoing_filetransfer", ctx)
+    events = Events(ctx.config.app_cfg["rabbitmq"]["outgoing"], ctx)
     events.publish(json.dumps(param_dict))
+
+    return True
 
 
 def main(ctx):
-    events = Events("incoming_s3_events", ctx)
+    events = Events(ctx.config.app_cfg["rabbitmq"]["incoming"], ctx)
     channel = events.get_channel()
 
     channel.basic_consume(
