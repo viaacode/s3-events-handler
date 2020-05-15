@@ -1,0 +1,26 @@
+viaa:
+    logging:
+        level:
+app:
+    environment: !ENV ${APP_ENVIRONMENT}
+    rabbitmq:
+        user: !ENV ${RABBIT_MQ_USER}
+        passwd: !ENV ${RABBIT_MQ_PASSWD}
+        host: 
+        port: 
+        incoming:
+            queue: !ENV ${S3_EVENTS_QUEUE}
+            exchange: !ENV ${S3_EVENTS_EXCHANGE}
+        outgoing:
+            queue: !ENV ${FILETRANSFER_QUEUE}
+            exchange: !ENV ${FILETRANSFER_EXCHANGE}
+    pid-service:
+        host: 
+    mediahaven:
+        ftp:
+            host: 
+            user: !ENV ${MEDIAHAVEN_FTP_USER}
+            passwd: !ENV ${MEDIAHAVEN_FTP_PASSWD}
+    organisations-api:
+        host: 
+    destination-folder: 
