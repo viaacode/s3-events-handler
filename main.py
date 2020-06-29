@@ -16,23 +16,23 @@
 #
 #######################################################################
 
+import json
 import os
 import sys
-import json
+
 import yaml
 
 # 3d party imports
 import pika
-from viaa.configuration import ConfigParser
-from viaa.observability import logging
 from lxml import etree
+from meemoo import Context
+from meemoo.events import Events
+from meemoo.helpers import FTP, SidecarBuilder, get_from_event
 
 # Local imports
-from meemoo.services import PIDService
-from meemoo.services import OrganisationsService
-from meemoo.events import Events
-from meemoo.helpers import SidecarBuilder, FTP, get_from_event
-from meemoo import Context
+from meemoo.services import MediahavenService, OrganisationsService, PIDService
+from viaa.configuration import ConfigParser
+from viaa.observability import logging
 
 config = ConfigParser()
 log = logging.get_logger(__name__, config=config)
@@ -63,6 +63,24 @@ def callback(ch, method, properties, body, ctx):
     except json.JSONDecodeError as error:
         log.warning("Bad s3 event.", error=str(error))
         return
+
+    # Check if item already in mediahaven based on key and md5
+    mediahaven_service = MediahavenService(ctx)
+    
+    result = mediahaven_service.get_fragment(
+        "s3_object_key", get_from_event(event, "object_key")[0]
+    )
+
+    try:
+        fragment = result["MediaDataList"][0]
+    except IndexError as ex:
+        pass
+    else:
+        if fragment["Dynamic"]["s3_object_key"] == get_from_event(event, "object_key"):
+            log.warning(
+                "Item already archived", s3_object_key=fragment["Dynamic"]["s3_object_key"]
+            )
+            return
 
     # Get a pid from the PIDService
     pid_service = PIDService(ctx)
