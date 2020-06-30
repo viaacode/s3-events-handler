@@ -26,6 +26,7 @@ from viaa.observability import logging
 config = ConfigParser()
 log = logging.get_logger(__name__, config=config)
 
+
 class AuthenticationException(Exception):
     """Exception raised when authentication fails."""
 
@@ -175,6 +176,7 @@ class MediahavenService(Service):
         response.raise_for_status()
 
         return response.json()
+
 
 # vim modeline
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4

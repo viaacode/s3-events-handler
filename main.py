@@ -66,19 +66,19 @@ def callback(ch, method, properties, body, ctx):
 
     # Check if item already in mediahaven based on key and md5
     mediahaven_service = MediahavenService(ctx)
-    
     result = mediahaven_service.get_fragment(
-        "s3_object_key", get_from_event(event, "object_key")[0]
+        "s3_object_key", get_from_event(event, "object_key")
     )
 
-    try:
-        fragment = result["MediaDataList"][0]
-    except IndexError as ex:
-        pass
-    else:
-        if fragment["Dynamic"]["s3_object_key"] == get_from_event(event, "object_key"):
+    if result["MediaDataList"]:
+        # Item is in mediahaven based on object key
+        mediahaven_md5 = result["MediaDataList"][0]["Dynamic"]["s3_object_key"]
+
+        if mediahaven_md5 == get_from_event(event, "object_key"):
+            # MD5's also match
             log.warning(
-                "Item already archived", s3_object_key=fragment["Dynamic"]["s3_object_key"]
+                "Item already archived",
+                s3_object_key=fragment["Dynamic"]["s3_object_key"],
             )
             return
 
@@ -146,7 +146,7 @@ def callback(ch, method, properties, body, ctx):
     ftp.put(sidecar_xml, dest_path, dest_filename)
 
     # Request file transfer
-    file_extension = os.path.splitext(event["Records"][0]["s3"]["object"]["key"])[1]
+    file_extension = os.path.splitext(get_from_event(event, "object_key"))[1]
     param_dict = construct_fts_params_dict(event, pid, file_extension, dest_path, ctx)
 
     events = Events(ctx.config.app_cfg["rabbitmq"]["outgoing"], ctx)
