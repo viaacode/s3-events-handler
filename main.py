@@ -72,9 +72,9 @@ def callback(ch, method, properties, body, ctx):
 
     if result["MediaDataList"]:
         # Item is in mediahaven based on object key
-        mediahaven_md5 = result["MediaDataList"][0]["Dynamic"]["s3_object_key"]
+        mediahaven_md5 = result["MediaDataList"][0]["Technical"]["Md5"]
 
-        if mediahaven_md5 == get_from_event(event, "object_key"):
+        if mediahaven_md5 == get_from_event(event, "md5"):
             # MD5's also match
             log.warning(
                 "Item already archived",
