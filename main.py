@@ -100,11 +100,15 @@ def callback(ch, method, properties, body, ctx):
 
     etree.SubElement(mdprops, "CP").text = "VRT"
     etree.SubElement(mdprops, "CP_id").text = "OR-rf5kf25"
+    etree.SubElement(mdprops, "sp_name").text = "s3"
     etree.SubElement(mdprops, "PID").text = pid
     etree.SubElement(mdprops, "md5").text = get_from_event(event, "md5")
     etree.SubElement(mdprops, "s3_domain").text = get_from_event(event, "domain")
     etree.SubElement(mdprops, "s3_bucket").text = get_from_event(event, "bucket")
     etree.SubElement(mdprops, "s3_object_key").text = get_from_event(
+        event, "object_key"
+    )
+    etree.SubElement(mdprops, "dc_source").text = get_from_event(
         event, "object_key"
     )
     etree.SubElement(mdprops, "s3_object_owner").text = get_from_event(event, "user")
