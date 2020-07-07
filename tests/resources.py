@@ -68,5 +68,23 @@ METADATA_DICT = {
     "Technical": {"Md5": "3d71f15f2d9ed0ef94d7fdc525c95e15"},
 }
 
+MOCK_MEDIAHAVEN_EXTERNAL_METADATA = """<?xml version='1.0' encoding='UTF-8'?>
+<MediaHAVEN_external_metadata>
+  <title>Essence: pid: test_pid</title>
+  <description>Main fragment for essence:\n- filename: 191213-VAN___statement_De_ideale_wereld___Don_12_December_2019-1983-d5be522e-3609-417a-a1f4-5922854620c8.MXF\n- CP: VRT\n</description>
+  <MDProperties>
+    <CP>VRT</CP>
+    <CP_id>OR-rf5kf25</CP_id>
+    <sp_name>s3</sp_name>
+    <PID>test_pid</PID>
+    <md5></md5>
+    <s3_domain>s3</s3_domain>
+    <s3_bucket>MAM_HighresVideo</s3_bucket>
+    <s3_object_key>191213-VAN___statement_De_ideale_wereld___Don_12_December_2019-1983-d5be522e-3609-417a-a1f4-5922854620c8.MXF</s3_object_key>
+    <dc_source>191213-VAN___statement_De_ideale_wereld___Don_12_December_2019-1983-d5be522e-3609-417a-a1f4-5922854620c8.MXF</dc_source>
+    <s3_object_owner>Object Owner CN+OR-id</s3_object_owner>
+  </MDProperties>
+</MediaHAVEN_external_metadata>
+"""
 # vim modeline
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4 smartindent
