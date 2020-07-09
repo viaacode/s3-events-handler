@@ -65,12 +65,14 @@ def construct_mediahaven_external_metadata(event, pid):
 
     root = etree.Element("MediaHAVEN_external_metadata")
     etree.SubElement(root, "title").text = f"Essence: pid: {pid}"
-    etree.SubElement(
-        root, "description"
-    ).text = f"Main fragment for essence:\n- filename: {s3_object_key}\n- CP: VRT\n"
+
+    description = f"""Main fragment for essence:
+    - filename: {s3_object_key}
+    - CP: VRT
+    """
+    etree.SubElement(root, "description").text = description
 
     mdprops = etree.SubElement(root, "MDProperties")
-
     etree.SubElement(mdprops, "CP").text = "VRT"
     etree.SubElement(mdprops, "CP_id").text = "OR-rf5kf25"
     etree.SubElement(mdprops, "sp_name").text = "s3"

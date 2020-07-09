@@ -71,7 +71,7 @@ METADATA_DICT = {
 MOCK_MEDIAHAVEN_EXTERNAL_METADATA = """<?xml version='1.0' encoding='UTF-8'?>
 <MediaHAVEN_external_metadata>
   <title>Essence: pid: test_pid</title>
-  <description>Main fragment for essence:\n- filename: 191213-VAN___statement_De_ideale_wereld___Don_12_December_2019-1983-d5be522e-3609-417a-a1f4-5922854620c8.MXF\n- CP: VRT\n</description>
+  <description>Main fragment for essence:\n    - filename: 191213-VAN___statement_De_ideale_wereld___Don_12_December_2019-1983-d5be522e-3609-417a-a1f4-5922854620c8.MXF\n    - CP: VRT\n    </description>
   <MDProperties>
     <CP>VRT</CP>
     <CP_id>OR-rf5kf25</CP_id>
