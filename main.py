@@ -57,6 +57,39 @@ def construct_fts_params_dict(event, pid, file_extension, dest_path, ctx):
     }
 
 
+def construct_mediahaven_external_metadata(event, pid):
+    ###############################
+    # DIRTY MEDIAHAVEN WORKAROUND #
+    ###############################
+    s3_object_key = get_from_event(event, "object_key")
+
+    root = etree.Element("MediaHAVEN_external_metadata")
+    etree.SubElement(root, "title").text = f"Essence: pid: {pid}"
+
+    description = f"""Main fragment for essence:
+    - filename: {s3_object_key}
+    - CP: VRT
+    """
+    etree.SubElement(root, "description").text = description
+
+    mdprops = etree.SubElement(root, "MDProperties")
+    etree.SubElement(mdprops, "CP").text = "VRT"
+    etree.SubElement(mdprops, "CP_id").text = "OR-rf5kf25"
+    etree.SubElement(mdprops, "sp_name").text = "s3"
+    etree.SubElement(mdprops, "PID").text = pid
+    etree.SubElement(mdprops, "md5").text = get_from_event(event, "md5")
+    etree.SubElement(mdprops, "s3_domain").text = get_from_event(event, "domain")
+    etree.SubElement(mdprops, "s3_bucket").text = get_from_event(event, "bucket")
+    etree.SubElement(mdprops, "s3_object_key").text = s3_object_key
+    etree.SubElement(mdprops, "dc_source").text = s3_object_key
+    etree.SubElement(mdprops, "s3_object_owner").text = get_from_event(event, "user")
+
+    tree = etree.ElementTree(root)
+    return etree.tostring(
+        root, pretty_print=True, encoding="UTF-8", xml_declaration=True
+    )
+
+
 def callback(ch, method, properties, body, ctx):
     try:
         event = json.loads(body)
@@ -89,36 +122,7 @@ def callback(ch, method, properties, body, ctx):
     # # Get the sidecar XML representation as bytes
     # sidecar_xml = sidecar_builder.to_bytes(pretty=True)
     # log.debug(sidecar_xml.decode('utf-8'))
-
-    ###############################
-    # DIRTY MEDIAHAVEN WORKAROUND #
-    ###############################
-    root = etree.Element("MediaHAVEN_external_metadata")
-    etree.SubElement(root, "title").text = f"s3-test {pid}"
-
-    mdprops = etree.SubElement(root, "MDProperties")
-
-    etree.SubElement(mdprops, "CP").text = "VRT"
-    etree.SubElement(mdprops, "CP_id").text = "OR-rf5kf25"
-    etree.SubElement(mdprops, "sp_name").text = "s3"
-    etree.SubElement(mdprops, "PID").text = pid
-    etree.SubElement(mdprops, "md5").text = get_from_event(event, "md5")
-    etree.SubElement(mdprops, "s3_domain").text = get_from_event(event, "domain")
-    etree.SubElement(mdprops, "s3_bucket").text = get_from_event(event, "bucket")
-    etree.SubElement(mdprops, "s3_object_key").text = get_from_event(
-        event, "object_key"
-    )
-    etree.SubElement(mdprops, "dc_source").text = get_from_event(
-        event, "object_key"
-    )
-    etree.SubElement(mdprops, "s3_object_owner").text = get_from_event(event, "user")
-
-    tree = etree.ElementTree(root)
-    sidecar_xml = etree.tostring(
-        root, pretty_print=True, encoding="UTF-8", xml_declaration=True
-    )
-
-    ###############################
+    sidecar_xml = construct_mediahaven_external_metadata(event, pid)
 
     or_id = get_from_event(event, "tenant")
     org_service = OrganisationsService(ctx)
