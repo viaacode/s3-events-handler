@@ -66,21 +66,17 @@ def callback(ch, method, properties, body, ctx):
 
     # Check if item already in mediahaven based on key and md5
     mediahaven_service = MediahavenService(ctx)
-    result = mediahaven_service.get_fragment(
-        "s3_object_key", get_from_event(event, "object_key")
-    )
+    query_params = [
+        ("s3_object_key", get_from_event(event, "object_key")),
+        ("md5", get_from_event(event, "md5")),
+    ]
+    result = mediahaven_service.get_fragment(query_params)
 
     if result["MediaDataList"]:
-        # Item is in mediahaven based on object key
-        mediahaven_md5 = result["MediaDataList"][0]["Technical"]["Md5"]
-
-        if mediahaven_md5 == get_from_event(event, "md5"):
-            # MD5's also match
-            log.warning(
-                "Item already archived",
-                s3_object_key=fragment["Dynamic"]["s3_object_key"],
-            )
-            return
+        log.warning(
+            "Item already archived", s3_object_key=get_from_event(event, "object_key")
+        )
+        return
 
     # Get a pid from the PIDService
     pid_service = PIDService(ctx)

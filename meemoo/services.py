@@ -12,6 +12,8 @@
 import functools
 import json
 import logging
+import urllib
+from typing import List, Tuple
 
 # Third-party imports
 import requests
@@ -155,15 +157,20 @@ class MediahavenService(Service):
         }
 
     @__authenticate
-    def get_fragment(self, query_key: str, value: str) -> dict:
+    def get_fragment(self, query_params: List[Tuple[str, str]]) -> dict:
         headers: dict = self._construct_headers()
         url: str = self.config["mediahaven"]["api"]["host"] + "media"
 
-        # Construct URL query parameters
-        params: dict = {
-            "q": f'+({query_key}:"{value}")',
+        # Construct URL query parameters as "+(k1:v1 k2:v2)"
+        query: str = f"+({' '.join([':'.join(map(str, k_v)) for k_v in query_params])})"
+
+        params_dict: dict = {
+            "q": query,
             "nrOfResults": 1,
         }
+        print(query)
+        # Encode the spaces in the query parameters as %20 and not +
+        params = urllib.parse.urlencode(params_dict, quote_via=urllib.parse.quote)
 
         # Send the GET request
         response = requests.get(url, headers=headers, params=params,)
