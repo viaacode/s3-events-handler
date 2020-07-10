@@ -162,13 +162,13 @@ class MediahavenService(Service):
         url: str = self.config["mediahaven"]["api"]["host"] + "media"
 
         # Construct URL query parameters as "+(k1:v1 k2:v2)"
-        query: str = f"+({' '.join([':'.join(map(str, k_v)) for k_v in query_params])})"
+        query: str = f"+({' '.join([':'.join(k_v) for k_v in query_params])})"
 
         params_dict: dict = {
             "q": query,
             "nrOfResults": 1,
         }
-        print(query)
+        
         # Encode the spaces in the query parameters as %20 and not +
         params = urllib.parse.urlencode(params_dict, quote_via=urllib.parse.quote)
 
