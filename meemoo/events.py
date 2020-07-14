@@ -22,6 +22,7 @@ from viaa.observability import logging
 config = ConfigParser()
 log = logging.get_logger(__name__, config=config)
 
+
 class Events(object):
     def __init__(self, queue_info, ctx):
         self.ctx = ctx
@@ -82,7 +83,7 @@ class Events(object):
             body=message,
             properties=pika.BasicProperties(
                 delivery_mode=2,  # make message persistent
-                correlation_id=correlation_id
+                correlation_id=correlation_id,
             ),
         )
 

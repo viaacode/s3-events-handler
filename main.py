@@ -16,23 +16,23 @@
 #
 #######################################################################
 
+import json
 import os
 import sys
-import json
+
 import yaml
 
 # 3d party imports
 import pika
-from viaa.configuration import ConfigParser
-from viaa.observability import logging
 from lxml import etree
+from meemoo import Context
+from meemoo.events import Events
+from meemoo.helpers import FTP, SidecarBuilder, get_from_event
 
 # Local imports
-from meemoo.services import PIDService
-from meemoo.services import OrganisationsService
-from meemoo.events import Events
-from meemoo.helpers import SidecarBuilder, FTP, get_from_event
-from meemoo import Context
+from meemoo.services import MediahavenService, OrganisationsService, PIDService
+from viaa.configuration import ConfigParser
+from viaa.observability import logging
 
 config = ConfigParser()
 log = logging.get_logger(__name__, config=config)
@@ -97,6 +97,20 @@ def callback(ch, method, properties, body, ctx):
         log.warning("Bad s3 event.", error=str(error))
         return
 
+    # Check if item already in mediahaven based on key and md5
+    mediahaven_service = MediahavenService(ctx)
+    query_params = [
+        ("s3_object_key", get_from_event(event, "object_key")),
+        ("md5", get_from_event(event, "md5")),
+    ]
+    result = mediahaven_service.get_fragment(query_params)
+
+    if result["MediaDataList"]:
+        log.warning(
+            "Item already archived", s3_object_key=get_from_event(event, "object_key")
+        )
+        return
+
     # Get a pid from the PIDService
     pid_service = PIDService(ctx)
     pid = pid_service.get_pid()
@@ -136,7 +150,7 @@ def callback(ch, method, properties, body, ctx):
     ftp.put(sidecar_xml, dest_path, dest_filename)
 
     # Request file transfer
-    file_extension = os.path.splitext(event["Records"][0]["s3"]["object"]["key"])[1]
+    file_extension = os.path.splitext(get_from_event(event, "object_key"))[1]
     param_dict = construct_fts_params_dict(event, pid, file_extension, dest_path, ctx)
 
     events = Events(ctx.config.app_cfg["rabbitmq"]["outgoing"], ctx)
