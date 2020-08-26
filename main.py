@@ -119,6 +119,17 @@ def construct_collateral_sidecar(event, pid, media_id):
         root, pretty_print=True, encoding="UTF-8", xml_declaration=True
     )
 
+def construct_essence_update_sidecar(pid):
+    root = etree.Element("MediaHAVEN_external_metadata")
+    mdprops = etree.SubElement(root, "MDProperties")
+    relations = etree.SubElement(mdprops, "dc_relations")
+    etree.SubElement(relations, "is_verwant_aan").text = pid
+
+    tree = etree.ElementTree(root)
+    return etree.tostring(
+        root, pretty_print=True, encoding="UTF-8", xml_declaration=True
+    )
+
 def callback(ch, method, properties, body, ctx):
     try:
         event = json.loads(body)
@@ -152,12 +163,16 @@ def callback(ch, method, properties, body, ctx):
         ]
         result = mediahaven_service.get_fragment(query_params)
         essence_pid = result["MediaDataList"][0]["Dynamic"]["PID"]
-
+        essence_fragment_id = result["MediaDataList"][0]["Internal"]["FragmentId"]
+        
         pid = f"{essence_pid}_{collateral_type}"
         dest_path = construct_destination_path(cp_name, ctx.config.app_cfg['collateral-destination-folder'])
         dest_filename = f"{pid}.xml"
 
         sidecar_xml = construct_collateral_sidecar(event, pid, media_id)
+
+        essence_update_sidecar = construct_essence_update_sidecar(pid)
+        mediahaven_service.update_metadata(essence_fragment_id, essence_update_sidecar)
 
     else:
         pid_service = PIDService(ctx)

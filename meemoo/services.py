@@ -184,6 +184,27 @@ class MediahavenService(Service):
 
         return response.json()
 
+        @__authenticate
+    def update_metadata(self, fragment_id: str, sidecar: str) -> dict:
+        headers: dict = self._construct_headers()
+
+        # Construct the URL to POST to
+        url: str = f"{self.config["mediahaven"]["api"]["host"] }/media/{fragment_id}"
+
+        data: dict = {"metadata": sidecar, "reason": "metadataUpdated"}
+
+        # Send the POST request, as multipart/form-data
+        response = requests.post(url, headers=headers, files=data)
+
+        if response.status_code == 401:
+            # AuthenticationException triggers a retry with a new token
+            raise AuthenticationException(response.text)
+
+        # If there is an HTTP error, raise it
+        response.raise_for_status()
+
+        return True
+
 
 # vim modeline
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
