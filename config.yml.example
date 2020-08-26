@@ -21,6 +21,11 @@ app:
             host: 
             user: !ENV ${MEDIAHAVEN_FTP_USER}
             passwd: !ENV ${MEDIAHAVEN_FTP_PASSWD}
+        api:
+            host:
+            user: 
+            passwd: 
     organisations-api:
         host: 
-    destination-folder: 
+    essence-destination-folder: 
+    collateral-destination-folder:

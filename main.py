@@ -38,8 +38,8 @@ config = ConfigParser()
 log = logging.get_logger(__name__, config=config)
 
 
-def construct_destination_path(cp_name, ctx):
-    return f"/{cp_name}/{ctx.config.app_cfg['destination-folder']}"
+def construct_destination_path(cp_name, folder):
+    return f"/{cp_name}/{folder}"
 
 
 def construct_fts_params_dict(event, pid, file_extension, dest_path, ctx):
@@ -57,10 +57,7 @@ def construct_fts_params_dict(event, pid, file_extension, dest_path, ctx):
     }
 
 
-def construct_mediahaven_external_metadata(event, pid):
-    ###############################
-    # DIRTY MEDIAHAVEN WORKAROUND #
-    ###############################
+def construct_essence_sidecar(event, pid):
     s3_object_key = get_from_event(event, "object_key")
 
     root = etree.Element("MediaHAVEN_external_metadata")
@@ -89,6 +86,38 @@ def construct_mediahaven_external_metadata(event, pid):
         root, pretty_print=True, encoding="UTF-8", xml_declaration=True
     )
 
+def construct_collateral_sidecar(event, pid, media_id):
+    s3_object_key = get_from_event(event, "object_key")
+
+    root = etree.Element("MediaHAVEN_external_metadata")
+    etree.SubElement(root, "title").text = f"Collateral: pid: {pid}"
+
+    description = f"""Subtitles for essence:
+    - filename: {s3_object_key}
+    - CP: VRT
+    """
+    etree.SubElement(root, "description").text = description
+
+    mdprops = etree.SubElement(root, "MDProperties")
+    etree.SubElement(mdprops, "CP").text = "VRT"
+    etree.SubElement(mdprops, "CP_id").text = "OR-rf5kf25"
+    etree.SubElement(mdprops, "sp_name").text = "s3"
+    etree.SubElement(mdprops, "PID").text = pid
+    etree.SubElement(mdprops, "md5").text = get_from_event(event, "md5")
+    etree.SubElement(mdprops, "s3_domain").text = get_from_event(event, "domain")
+    etree.SubElement(mdprops, "s3_bucket").text = get_from_event(event, "bucket")
+    etree.SubElement(mdprops, "s3_object_key").text = s3_object_key
+    etree.SubElement(mdprops, "dc_source").text = s3_object_key
+    etree.SubElement(mdprops, "s3_object_owner").text = get_from_event(event, "user")
+    etree.SubElement(mdprops, "dc_identifier_localid").text = media_id
+
+    relations = etree.SubElement(mdprops, "dc_relations")
+    etree.SubElement(relations, "is_verwant_aan").text = pid
+
+    tree = etree.ElementTree(root)
+    return etree.tostring(
+        root, pretty_print=True, encoding="UTF-8", xml_declaration=True
+    )
 
 def callback(ch, method, properties, body, ctx):
     try:
@@ -111,10 +140,34 @@ def callback(ch, method, properties, body, ctx):
         )
         return
 
-    # Get a pid from the PIDService
-    pid_service = PIDService(ctx)
-    pid = pid_service.get_pid()
-    log.info(f"PID received: {pid}")
+    # Check if we are dealing with essence or collateral
+    bucket = get_from_event(event, "bucket")
+    if bucket == "mam-collaterals":
+        object_key = get_from_event(event, "object_key")
+        collateral_type = object_key.split("/")[0]
+        media_id = object_key.split("/")[1]
+
+        query_params = [
+            ("dc_identifier_localid", media_id),
+        ]
+        result = mediahaven_service.get_fragment(query_params)
+        essence_pid = result["MediaDataList"][0]["Dynamic"]["PID"]
+
+        pid = f"{essence_pid}_{collateral_type}"
+        dest_path = construct_destination_path(cp_name, ctx.config.app_cfg['collateral-destination-folder'])
+        dest_filename = f"{pid}.xml"
+
+        sidecar_xml = construct_collateral_sidecar(event, pid, media_id)
+
+    else:
+        pid_service = PIDService(ctx)
+        pid = pid_service.get_pid()
+        log.info(f"PID received: {pid}")
+
+        dest_path = construct_destination_path(cp_name, ctx.config.app_cfg['essence-destination-folder'])
+        dest_filename = f"{pid}.xml"
+
+        sidecar_xml = construct_essence_sidecar(event, pid)
 
     # # Build the sidecar
     # sidecar_builder = SidecarBuilder(ctx)
@@ -136,14 +189,11 @@ def callback(ch, method, properties, body, ctx):
     # # Get the sidecar XML representation as bytes
     # sidecar_xml = sidecar_builder.to_bytes(pretty=True)
     # log.debug(sidecar_xml.decode('utf-8'))
-    sidecar_xml = construct_mediahaven_external_metadata(event, pid)
 
     or_id = get_from_event(event, "tenant")
     org_service = OrganisationsService(ctx)
     cp_name = org_service.get_organisation(or_id)["cp_name_mam"]
 
-    dest_path = construct_destination_path(cp_name, ctx)
-    dest_filename = f"{pid}.xml"
     log.debug(f"Destination: path={dest_path}, file_name={dest_filename}")
 
     ftp = FTP(ctx)

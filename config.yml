@@ -27,4 +27,5 @@ app:
             passwd: !ENV ${MEDIAHAVEN_API_PASSWD}
     organisations-api:
         host: http://do-qas-esb-01.do.viaa.be:10003/api/
-    destination-folder: DISK-SHARE-EVENTS
+    essence-destination-folder: DISK-SHARE-EVENTS
+    collateral-destination-folder: DISK-SHARE-EVENTS
