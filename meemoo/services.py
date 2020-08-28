@@ -184,12 +184,12 @@ class MediahavenService(Service):
 
         return response.json()
 
-        @__authenticate
+    @__authenticate
     def update_metadata(self, fragment_id: str, sidecar: str) -> dict:
         headers: dict = self._construct_headers()
 
         # Construct the URL to POST to
-        url: str = f"{self.config["mediahaven"]["api"]["host"] }/media/{fragment_id}"
+        url: str = f"{self.config['mediahaven']['api']['host'] }/media/{fragment_id}"
 
         data: dict = {"metadata": sidecar, "reason": "metadataUpdated"}
 

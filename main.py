@@ -119,7 +119,7 @@ def construct_collateral_sidecar(event, pid, media_id):
         root, pretty_print=True, encoding="UTF-8", xml_declaration=True
     )
 
-def construct_essence_update_sidecar(pid):
+def construct_fragment_update_sidecar(pid):
     root = etree.Element("MediaHAVEN_external_metadata")
     mdprops = etree.SubElement(root, "MDProperties")
     relations = etree.SubElement(mdprops, "dc_relations")
@@ -151,6 +151,10 @@ def callback(ch, method, properties, body, ctx):
         )
         return
 
+    or_id = get_from_event(event, "tenant")
+    org_service = OrganisationsService(ctx)
+    cp_name = org_service.get_organisation(or_id)["cp_name_mam"]
+
     # Check if we are dealing with essence or collateral
     bucket = get_from_event(event, "bucket")
     if bucket == "mam-collaterals":
@@ -162,17 +166,17 @@ def callback(ch, method, properties, body, ctx):
             ("dc_identifier_localid", media_id),
         ]
         result = mediahaven_service.get_fragment(query_params)
-        essence_pid = result["MediaDataList"][0]["Dynamic"]["PID"]
-        essence_fragment_id = result["MediaDataList"][0]["Internal"]["FragmentId"]
+        item_pid = result["MediaDataList"][0]["Dynamic"]["PID"]
+        item_fragment_id = result["MediaDataList"][0]["Internal"]["FragmentId"]
         
-        pid = f"{essence_pid}_{collateral_type}"
+        pid = f"{item_pid}_{collateral_type}"
         dest_path = construct_destination_path(cp_name, ctx.config.app_cfg['collateral-destination-folder'])
         dest_filename = f"{pid}.xml"
 
         sidecar_xml = construct_collateral_sidecar(event, pid, media_id)
 
-        essence_update_sidecar = construct_essence_update_sidecar(pid)
-        mediahaven_service.update_metadata(essence_fragment_id, essence_update_sidecar)
+        essence_update_sidecar = construct_fragment_update_sidecar(pid)
+        mediahaven_service.update_metadata(item_fragment_id, essence_update_sidecar)
 
     else:
         pid_service = PIDService(ctx)
@@ -204,10 +208,6 @@ def callback(ch, method, properties, body, ctx):
     # # Get the sidecar XML representation as bytes
     # sidecar_xml = sidecar_builder.to_bytes(pretty=True)
     # log.debug(sidecar_xml.decode('utf-8'))
-
-    or_id = get_from_event(event, "tenant")
-    org_service = OrganisationsService(ctx)
-    cp_name = org_service.get_organisation(or_id)["cp_name_mam"]
 
     log.debug(f"Destination: path={dest_path}, file_name={dest_filename}")
 
