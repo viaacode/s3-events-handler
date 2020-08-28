@@ -162,12 +162,16 @@ def callback(ch, method, properties, body, ctx):
         collateral_type = object_key.split("/")[0]
         media_id = object_key.split("/")[1]
 
+        log.debug(f"Received a {collateral_type} for media id: {media_id}")
+
         query_params = [
             ("dc_identifier_localid", media_id),
         ]
         result = mediahaven_service.get_fragment(query_params)
         item_pid = result["MediaDataList"][0]["Dynamic"]["PID"]
         item_fragment_id = result["MediaDataList"][0]["Internal"]["FragmentId"]
+
+        log.debug(f"Found pid: {item_pid} for media id: {media_id}")
         
         pid = f"{item_pid}_{collateral_type}"
         dest_path = construct_destination_path(cp_name, ctx.config.app_cfg['collateral-destination-folder'])
@@ -237,6 +241,8 @@ def main(ctx):
         # Ack the message when the callback fn returns
         auto_ack=True,
     )
+
+    log.info("Started listening for messages...", queue=ctx.config.app_cfg["rabbitmq"]["incoming"])
     channel.start_consuming()
 
 
