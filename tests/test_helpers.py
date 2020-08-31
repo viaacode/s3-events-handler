@@ -17,12 +17,12 @@
 import json
 import unittest
 from meemoo.helpers import get_from_event
-from tests.resources import S3_MOCK_EVENT
+from tests.resources import S3_MOCK_ESSENCE_EVENT
 
 
 class TestHelperFunctions(unittest.TestCase):
     def test_get_from_event(self):
-        bucket = get_from_event(json.loads(S3_MOCK_EVENT), "bucket")
+        bucket = get_from_event(json.loads(S3_MOCK_ESSENCE_EVENT), "bucket")
         self.assertEqual(bucket, "MAM_HighresVideo")
 
 
