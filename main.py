@@ -140,7 +140,7 @@ def callback(ch, method, properties, body, ctx):
     # Check if item already in mediahaven based on key and md5
     mediahaven_service = MediahavenService(ctx)
     query_params = [
-        ("s3_object_key", get_from_event(event, "object_key")),
+        ("s3_object_key", f'"{get_from_event(event, "object_key")}"'),
         ("md5", get_from_event(event, "md5")),
     ]
     result = mediahaven_service.get_fragment(query_params)
@@ -177,7 +177,7 @@ def callback(ch, method, properties, body, ctx):
         dest_path = construct_destination_path(cp_name, ctx.config.app_cfg['collateral-destination-folder'])
         dest_filename = f"{pid}.xml"
 
-        sidecar_xml = construct_collateral_sidecar(event, pid, media_id)
+        sidecar_xml = construct_collateral_sidecar(event, item_pid, media_id)
 
         essence_update_sidecar = construct_fragment_update_sidecar(pid)
         mediahaven_service.update_metadata(item_fragment_id, essence_update_sidecar)
