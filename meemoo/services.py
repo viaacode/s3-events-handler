@@ -131,9 +131,9 @@ class MediahavenService(Service):
 
     def __get_token(self) -> str:
         """Gets an OAuth token that can be used in mediahaven requests to authenticate."""
-        user: str = self.config["mediahaven"]["api"]["user"]
-        password: str = self.config["mediahaven"]["api"]["passwd"]
-        url: str = self.config["mediahaven"]["api"]["host"] + "oauth/access_token"
+        user: str = self.config[self.name]["user"]
+        password: str = self.config[self.name]["passwd"]
+        url: str = f"{self.host}oauth/access_token"
         payload = {"grant_type": "password"}
 
         try:
@@ -161,7 +161,7 @@ class MediahavenService(Service):
     @__authenticate
     def get_fragment(self, query_params: List[Tuple[str, str]]) -> dict:
         headers: dict = self._construct_headers()
-        url: str = self.config["mediahaven"]["api"]["host"] + "media"
+        url: str = f"{self.host}media"
 
         # Construct URL query parameters as "+(k1:v1 k2:v2)"
         query: str = f"+({' '.join([':'.join(k_v) for k_v in query_params])})"
@@ -191,7 +191,7 @@ class MediahavenService(Service):
         headers: dict = self._construct_headers()
 
         # Construct the URL to POST to
-        url: str = f"{self.config['mediahaven']['api']['host'] }/media/{fragment_id}"
+        url: str = f"{self.host}media/{fragment_id}"
 
         data: dict = {"metadata": sidecar, "reason": "metadataUpdated"}
 
