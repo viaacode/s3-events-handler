@@ -50,8 +50,10 @@ class Service(object):
         host = None
         try:
             host = self.config[self.name]["host"]
-        except KeyError as e:
-            log.warning("Oeps")
+        except KeyError:
+            log.warning(
+                f"The key 'host' not found in the config for service: {self.name}"
+            )
         else:
             log.debug(f"Host: {host}")
         return host
