@@ -232,7 +232,7 @@ def main(ctx):
     events = Events(ctx.config.app_cfg["rabbitmq"]["incoming"], ctx)
     channel = events.get_channel()
 
-    channel.basic_consume(
+    consumer_tag = channel.basic_consume(
         queue=events.queue,
         # Adapt callback fn to add in the ctx parameter
         on_message_callback=lambda ch, method, properties, body: callback(
@@ -242,7 +242,8 @@ def main(ctx):
         auto_ack=True,
     )
 
-    log.info("Started listening for messages...", queue=ctx.config.app_cfg["rabbitmq"]["incoming"])
+    log.info(f"Starting: listening for messages on q:{events.queue}.")
+    log.info(f"Starting: consumer tag is: {consumer_tag}.")
     channel.start_consuming()
 
 
