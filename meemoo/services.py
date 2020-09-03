@@ -87,7 +87,7 @@ class PIDService(Service):
             pid = "a1b2c3d4e5"
         else:
             resp = requests.get(self.host)
-            log.debug(f"Response is: {resp.raw}")
+            log.debug(f"Response is: {resp.json()}")
             pid = resp.json()[0]["id"]
         return pid
 
