@@ -42,3 +42,28 @@ def mock_events(monkeypatch):
 
     monkeypatch.setattr(Events, "__init__", mock_init)
     monkeypatch.setattr(Events, "publish", mock_publish)
+
+
+@pytest.fixture
+def mock_mediahaven_api(monkeypatch):
+    def mock_get_token(self):
+        print("Getting token.")
+        return {"access_token": "bearer, bear with me"}
+
+    def mock_get_fragment(self, query_params):
+        print("Get fragment")
+        return {
+            "MediaDataList": [
+                {"Dynamic": {"PID": "pid"}, "Internal": {"FragmentId": "ID"}}
+            ]
+        }
+
+    def mock_update_metadata(self, fragment_id: str, sidecar: str):
+        print("Update metadata")
+        pass
+
+    from meemoo.services import MediahavenService
+
+    monkeypatch.setattr(MediahavenService, "_MediahavenService__get_token", mock_get_token)
+    monkeypatch.setattr(MediahavenService, "get_fragment", mock_get_fragment)
+    monkeypatch.setattr(MediahavenService, "update_metadata", mock_update_metadata)
