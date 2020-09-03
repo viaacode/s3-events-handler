@@ -3,7 +3,7 @@ import pytest
 from meemoo.services import Service
 
 
-class TestUnknownHostService(Service):
+class UnknownHostServiceTest(Service):
     def __init__(self, ctx):
         self.name = "unknown"
         super().__init__(ctx)
@@ -19,7 +19,7 @@ def context():
 
 
 def test_get_service_host_not_found(context, caplog):
-    service = TestUnknownHostService(context)
+    service = UnknownHostServiceTest(context)
     assert service.host is None
     log_record = caplog.records[0]
     assert log_record.levelname == "WARNING"
