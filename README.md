@@ -31,7 +31,8 @@ The main flow:
 
 3. Set the needed config:
 
-    Included in this repository is a `config.yml.example` file.
+    Included in this repository is a `config.yml` file detailing the required configuration.
+    There is also an `.env.example` file containing all the needed env variables used in the `config.yml` file.
     All values in the config have to be set in order for the application to function correctly.
     You can use `!ENV ${EXAMPLE}` as a config value to make the application get the `EXAMPLE` environment variable.
 

@@ -6,8 +6,8 @@ app:
     rabbitmq:
         user: !ENV ${RABBIT_MQ_USER}
         passwd: !ENV ${RABBIT_MQ_PASSWD}
-        host: mq-qas.do.viaa.be
-        port: 5672
+        host: !ENV ${RABBIT_MQ_HOST}
+        port: !ENV ${RABBIT_MQ_PORT}
         incoming:
             queue: !ENV ${S3_EVENTS_QUEUE}
             exchange: !ENV ${S3_EVENTS_EXCHANGE}
@@ -15,17 +15,17 @@ app:
             queue: !ENV ${FILETRANSFER_QUEUE}
             exchange: !ENV ${FILETRANSFER_EXCHANGE}
     pid-service:
-        host: http://do-qas-mvn-01.do.viaa.be:8080/pid-qas
+        host: !ENV ${PID_SERVICE_HOST}
     mediahaven:
         ftp:
-            host: ftp://dg-qas-tra-01.dg.viaa.be/
+            host: !ENV ${MEDIAHAVEN_FTP_HOST}
             user: !ENV ${MEDIAHAVEN_FTP_USER}
             passwd: !ENV ${MEDIAHAVEN_FTP_PASSWD}
     mediahaven-api:
-            host: https://archief-qas.viaa.be/mediahaven-rest-api/resources/
+            host: !ENV ${MEDIAHAVEN_API_HOST}
             user: !ENV ${MEDIAHAVEN_API_USER}
             passwd: !ENV ${MEDIAHAVEN_API_PASSWD}
     organisations-api:
-        host: http://do-qas-esb-01.do.viaa.be:10003/api/
-    essence-destination-folder: DISK-SHARE-EVENTS
-    collateral-destination-folder: DISK-SHARE-EVENTS
+        host: !ENV ${ORGANISATIONS_API_HOST}
+    essence-destination-folder: !ENV ${ESSENCE_DESTINATION_FOLDER}
+    collateral-destination-folder: !ENV ${COLLATERAL_DESTINATION_FOLDER}
