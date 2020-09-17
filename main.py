@@ -285,24 +285,25 @@ def remove_handler(event: dict, properties, ctx: Context) -> bool:
         if not item["Internal"]["IsFragment"]
     )
 
-    # Query all the objects with the media IDs of the fragments
-    query_params_media_ids = [
-        ("dc_identifier_localid", f"{media_id}") for media_id in media_id_fragments
-    ]
-    response = mediahaven_service.get_fragment(query_params_media_ids)
-    # Collect the umids of the collaterals
-    umids_collateral = [
-        item["Internal"]["MediaObjectId"]
-        for item in response["MediaDataList"]
-        if not item["Internal"]["IsFragment"]
-    ]
+    if media_id_fragments:
+        # Query all the objects with the media IDs of the fragments
+        query_params_media_ids = [
+            ("dc_identifier_localid", f"{media_id}") for media_id in media_id_fragments
+        ]
+        response = mediahaven_service.get_fragment(query_params_media_ids)
+        # Collect the umids of the collaterals
+        umids_collateral = [
+            item["Internal"]["MediaObjectId"]
+            for item in response["MediaDataList"]
+            if not item["Internal"]["IsFragment"]
+        ]
 
-    # Delete the collaterals
-    for umid_collateral in umids_collateral:
-        result = delete_media_object(mediahaven_service, umid_collateral)
-        if not result:
-            return False
-        time.sleep(0.2)  # Sleep to not hit rate limit
+        # Delete the collaterals
+        for umid_collateral in umids_collateral:
+            result = delete_media_object(mediahaven_service, umid_collateral)
+            if not result:
+                return False
+            time.sleep(0.2)  # Sleep to not hit rate limit
 
     # Delete the essence
     return delete_media_object(mediahaven_service, umid)
