@@ -81,7 +81,7 @@ def mock_mediahaven_api(monkeypatch):
         print("Update metadata")
         pass
 
-    def mock_delete_media_object(self, umid: str) -> bool:
+    def mock_delete_media_object(self, fragment_id: str) -> bool:
         print("Delete media object")
         return True
 

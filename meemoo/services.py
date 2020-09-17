@@ -212,11 +212,11 @@ class MediahavenService(Service):
         return True
 
     @__authenticate
-    def delete_media_object(self, umid: str) -> bool:
+    def delete_media_object(self, fragment_id: str) -> bool:
         headers: dict = self._construct_headers()
 
         # Construct the URL to post to
-        url: str = f'{self.host}media/{umid}'
+        url: str = f'{self.host}media/{fragment_id}'
 
         # Send the DELETE request
         response = requests.delete(url, headers=headers)
