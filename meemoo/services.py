@@ -212,14 +212,16 @@ class MediahavenService(Service):
         return True
 
     @__authenticate
-    def delete_media_object(self, fragment_id: str) -> bool:
+    def delete_media_object(self, fragment_id: str, reason: str) -> bool:
         headers: dict = self._construct_headers()
 
         # Construct the URL to post to
         url: str = f'{self.host}media/{fragment_id}'
 
+        data = {"reason": reason}
+
         # Send the DELETE request
-        response = requests.delete(url, headers=headers)
+        response = requests.delete(url, headers=headers, files=data)
 
         if response.status_code == 401:
             # AuthenticationException triggers a retry with a new token

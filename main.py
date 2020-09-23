@@ -219,13 +219,13 @@ def create_handler(event: dict, properties, ctx: Context) -> bool:
     return True
 
 
-def delete_media_object(mediahaven_service, fragment_id: str) -> bool:
+def delete_media_object(mediahaven_service, fragment_id: str, reason: str) -> bool:
     log.info(
         f"Deleting fragment for object with fragment id: {fragment_id}",
         fragment_id=fragment_id,
     )
     try:
-        mediahaven_service.delete_media_object(fragment_id)
+        mediahaven_service.delete_media_object(fragment_id, reason)
     except (HTTPError, RequestException) as error:
         log.error(
             f"Error when deleting MH fragment with fragment ID: {fragment_id}",
@@ -272,12 +272,12 @@ def remove_handler(event: dict, properties, ctx: Context) -> bool:
     log.info(f"Removing media object with s3 bucket: {s3_bucket} and object key: {s3_object_key}")
     items = result["MediaDataList"]
 
-    # Collect the media IDs of the fragments. These will be used to remove the collaterals.
-    media_id_fragments = [
-        item["Dynamic"]["dc_identifier_localid"]
-        for item in items
-        if item["Internal"]["IsFragment"]
-    ]
+    # Collect the Media ID (and Fragment ID) of the fragments. These will be used to remove the collaterals.
+    fragments = {}
+    for item in items:
+        if item["Internal"]["IsFragment"]:
+            fragments[item["Dynamic"]["dc_identifier_localid"]] = item["Internal"]["FragmentId"]
+
     # Get the Fragment ID of the essence to delete
     fragment_id_essence = next(
         item["Internal"]["FragmentId"]
@@ -285,28 +285,39 @@ def remove_handler(event: dict, properties, ctx: Context) -> bool:
         if not item["Internal"]["IsFragment"]
     )
 
-    if media_id_fragments:
+    if fragments:
         # Query all the objects with the media IDs of the fragments
         query_params_media_ids = [
-            ("dc_identifier_localid", f"{media_id}") for media_id in media_id_fragments
+            ("dc_identifier_localid", f"{media_id}") for media_id in fragments.keys()
         ]
         response = mediahaven_service.get_fragment(query_params_media_ids)
-        # Collect the Fragment IDs of the collaterals
-        fragment_ids_collateral = [
-            item["Internal"]["FragmentId"]
+        # Collect the Fragment IDs of the collaterals. The Media ID is used in the delete reason.
+        fragments_collateral = [
+            (item["Internal"]["FragmentId"], item["Dynamic"]["dc_identifier_localid"])
             for item in response["MediaDataList"]
             if not item["Internal"]["IsFragment"]
         ]
 
         # Delete the collaterals
-        for fragment_id_collateral in fragment_ids_collateral:
-            result = delete_media_object(mediahaven_service, fragment_id_collateral)
+        for fragment_collateral in fragments_collateral:
+            # Get the Fragment ID of the fragment to which this collateral is linked to
+            media_id = fragment_collateral[1]
+            linked_fragment_id = fragments.get(media_id)
+            result = delete_media_object(
+                mediahaven_service,
+                fragment_collateral[0],
+                f'This was a collateral with Media ID: "{media_id}" linked to fragment with Fragment ID: "{linked_fragment_id}". Underlying essence has been deleted via s3 delete-object'
+            )
             if not result:
                 return False
             time.sleep(0.2)  # Sleep to not hit rate limit
 
     # Delete the essence
-    return delete_media_object(mediahaven_service, fragment_id_essence)
+    return delete_media_object(
+        mediahaven_service,
+        fragment_id_essence,
+        f's3 delete-object for bucket: "{s3_bucket}" and key: "{s3_object_key}"'
+    )
 
 
 def get_handler(event: dict):
