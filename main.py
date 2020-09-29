@@ -301,12 +301,12 @@ def remove_handler(event: dict, properties, ctx: Context) -> bool:
         # Delete the collaterals
         for fragment_collateral in fragments_collateral:
             # Get the Fragment ID of the fragment to which this collateral is linked to
-            media_id = fragment_collateral[1]
-            linked_fragment_id = fragments.get(media_id)
+            local_id = fragment_collateral[1]
+            linked_fragment_id = fragments.get(local_id)
             result = delete_media_object(
                 mediahaven_service,
                 fragment_collateral[0],
-                f'This was a collateral with Media ID: "{media_id}" linked to fragment with Fragment ID: "{linked_fragment_id}". Underlying essence has been deleted via s3 delete-object'
+                f'Deleted collateral with local_id: "{local_id}" linked to fragment with fragment_id: "{linked_fragment_id}". Essence was deleted via s3 delete-object.'
             )
             if not result:
                 return False
