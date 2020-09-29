@@ -278,12 +278,16 @@ def remove_handler(event: dict, properties, ctx: Context) -> bool:
         if item["Internal"]["IsFragment"]:
             fragments[item["Dynamic"]["dc_identifier_localid"]] = item["Internal"]["FragmentId"]
 
-    # Get the Fragment ID of the essence to delete
-    fragment_id_essence = next(
-        item["Internal"]["FragmentId"]
-        for item in items
-        if not item["Internal"]["IsFragment"]
-    )
+    try:
+        # Get the Fragment ID of the essence to delete
+        fragment_id_essence = next(
+            item["Internal"]["FragmentId"]
+            for item in items
+            if not item["Internal"]["IsFragment"]
+        )
+    except StopIteration:
+        # Should not happen
+        return False
 
     if fragments:
         # Query all the objects with the media IDs of the fragments
