@@ -128,7 +128,7 @@ def construct_fragment_update_sidecar(pid):
     )
 
 
-def create_handler(event: dict, properties, ctx: Context) -> bool:
+def handle_create_event(event: dict, properties, ctx: Context) -> bool:
     """Handler for s3 create events"""
     # Check if item already in mediahaven based on key and md5
     mediahaven_service = MediahavenService(ctx)
@@ -235,7 +235,7 @@ def delete_media_object(mediahaven_service, fragment_id: str, reason: str) -> bo
     return True
 
 
-def remove_handler(event: dict, properties, ctx: Context) -> bool:
+def handle_remove_event(event: dict, properties, ctx: Context) -> bool:
     """Handler for s3 removed events
 
     First we query MH with the s3_object_key and s3_bucket
@@ -324,14 +324,14 @@ def remove_handler(event: dict, properties, ctx: Context) -> bool:
     )
 
 
-def get_handler(event: dict):
+def calculate_handler(event: dict):
     """ Factory method to return correct handler """
     event_name = get_from_event(event, "event_name")
     base_type = event_name.split(":")[0]
     if base_type == "ObjectCreated":
-        return create_handler
+        return handle_create_event
     elif base_type == "ObjectRemoved":
-        return remove_handler
+        return handle_remove_event
     else:
         log.error("Unknown type of s3 event: {event_name}", s3_event=event)
         raise ValueError(event_name)
@@ -345,7 +345,7 @@ def callback(ch, method, properties, body, ctx):
         return False
 
     try:
-        handler = get_handler(event)
+        handler = calculate_handler(event)
     except ValueError:
         return False
 
