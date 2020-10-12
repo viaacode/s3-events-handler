@@ -5,10 +5,10 @@ SHELL = /bin/bash
 
 .PHONY: all
 
-NAMESPACE = vrt-intake
+NAMESPACE = s3-components
 OC_PROJECT = ${NAMESPACE}
 
-APP_NAME = nano-borndigital
+APP_NAME = s3-events-handler
 IMAGE_NAME = ${NAMESPACE}/${APP_NAME}
 REGISTRY = docker-registry-default.apps.do-prd-okp-m0.do.viaa.be
 login:
