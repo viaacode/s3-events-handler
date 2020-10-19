@@ -22,8 +22,11 @@ from tests.resources import S3_MOCK_ESSENCE_EVENT
 
 class TestHelperFunctions(unittest.TestCase):
     def test_get_from_event(self):
-        bucket = get_from_event(json.loads(S3_MOCK_ESSENCE_EVENT), "bucket")
+        event_dict = json.loads(S3_MOCK_ESSENCE_EVENT)
+        bucket = get_from_event(event_dict, "bucket")
         self.assertEqual(bucket, "MAM_HighresVideo")
+        event_name = get_from_event(event_dict, "event_name")
+        self.assertEqual(event_name, "ObjectCreated:Put")
 
 
 if __name__ == "__main__":

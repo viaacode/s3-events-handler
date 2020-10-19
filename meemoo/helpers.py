@@ -9,7 +9,6 @@
 #
 
 # System imports
-import os
 from io import BytesIO
 from ftplib import FTP as BuiltinFTP
 from urllib.parse import urlparse
@@ -47,7 +46,7 @@ def try_to_find_md5(object_metadata):
 
 
 def get_from_event(event, name):
-    keys = ["bucket", "object_key", "domain", "tenant", "user", "md5"]
+    keys = ["bucket", "object_key", "domain", "tenant", "user", "md5", "event_name"]
     assert name in keys, f'Unknown key: "{name}"'
     record = event["Records"][0]
     if name == "bucket":
@@ -62,6 +61,8 @@ def get_from_event(event, name):
         return record["userIdentity"]["principalId"]
     elif name == "md5":
         return try_to_find_md5(record["s3"]["object"]["metadata"])
+    elif name == "event_name":
+        return record["eventName"]
 
 
 class SidecarBuilder(object):
@@ -78,6 +79,7 @@ class SidecarBuilder(object):
         "mhs": f"https://zeticon.mediahaven.com/metadata/{MHS_VERSION}/mhs/",
         "mh": f"https://zeticon.mediahaven.com/metadata/{MHS_VERSION}/mh/",
     }
+
     #
     def __init__(self, ctx=None):
         self.sidecar = None
@@ -175,7 +177,7 @@ class FTP(object):
                 conn.cwd(destination_path)
                 stor_cmd = f"STOR {destination_filename}"
                 conn.storbinary(stor_cmd, BytesIO(content_bytes))
-            except Exception as exception:
+            except Exception:
                 log.critical(f"Failed to put sidecar on {self.host} {destination_path}")
 
 

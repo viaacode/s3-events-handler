@@ -159,16 +159,20 @@ class MediahavenService(Service):
         }
 
     @__authenticate
-    def get_fragment(self, query_params: List[Tuple[str, str]]) -> dict:
+    def get_fragment(self, query_params: List[Tuple[str, str]], or_params=True) -> dict:
         headers: dict = self._construct_headers()
         url: str = f"{self.host}media"
 
-        # Construct URL query parameters as "+(k1:v1 k2:v2)"
-        query: str = f"+({' '.join([':'.join(k_v) for k_v in query_params])})"
+        # or -> Construct URL query parameters as "+(k1:v1 k2:v2)"
+        # and -> Construct URL query parameters as "+(k1:v1) +(k2:v2)"
+        query = (
+            f"+({' '.join([':'.join(k_v) for k_v in query_params])})"
+            if or_params
+            else " ".join([f'+({":".join(k_v)})' for k_v in query_params])
+        )
 
         params_dict: dict = {
             "q": query,
-            "nrOfResults": 1,
         }
         
         # Encode the spaces in the query parameters as %20 and not +
@@ -187,7 +191,7 @@ class MediahavenService(Service):
         return response.json()
 
     @__authenticate
-    def update_metadata(self, fragment_id: str, sidecar: str) -> dict:
+    def update_metadata(self, fragment_id: str, sidecar: str) -> bool:
         headers: dict = self._construct_headers()
 
         # Construct the URL to POST to
@@ -206,6 +210,27 @@ class MediahavenService(Service):
         response.raise_for_status()
 
         return True
+
+    @__authenticate
+    def delete_media_object(self, fragment_id: str, reason: str) -> bool:
+        headers: dict = self._construct_headers()
+
+        # Construct the URL to post to
+        url: str = f'{self.host}media/{fragment_id}'
+
+        data = {"reason": reason}
+
+        # Send the DELETE request
+        response = requests.delete(url, headers=headers, files=data)
+
+        if response.status_code == 401:
+            # AuthenticationException triggers a retry with a new token
+            raise AuthenticationException(response.text)
+
+        # If there is an HTTP error, raise it
+        response.raise_for_status()
+
+        return response.status_code == 204
 
 
 # vim modeline

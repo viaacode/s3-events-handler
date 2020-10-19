@@ -18,16 +18,14 @@
 
 import json
 import os
-import sys
-
-import yaml
+import time
 
 # 3d party imports
-import pika
 from lxml import etree
 from meemoo import Context
 from meemoo.events import Events
-from meemoo.helpers import FTP, SidecarBuilder, get_from_event
+from meemoo.helpers import FTP, get_from_event
+from requests.exceptions import HTTPError, RequestException
 
 # Local imports
 from meemoo.services import MediahavenService, OrganisationsService, PIDService
@@ -81,10 +79,10 @@ def construct_essence_sidecar(event, pid):
     etree.SubElement(mdprops, "dc_source").text = s3_object_key
     etree.SubElement(mdprops, "s3_object_owner").text = get_from_event(event, "user")
 
-    tree = etree.ElementTree(root)
     return etree.tostring(
         root, pretty_print=True, encoding="UTF-8", xml_declaration=True
     )
+
 
 def construct_collateral_sidecar(event, pid, media_id):
     s3_object_key = get_from_event(event, "object_key")
@@ -114,10 +112,10 @@ def construct_collateral_sidecar(event, pid, media_id):
     relations = etree.SubElement(mdprops, "dc_relations")
     etree.SubElement(relations, "is_verwant_aan").text = pid
 
-    tree = etree.ElementTree(root)
     return etree.tostring(
         root, pretty_print=True, encoding="UTF-8", xml_declaration=True
     )
+
 
 def construct_fragment_update_sidecar(pid):
     root = etree.Element("MediaHAVEN_external_metadata")
@@ -125,18 +123,13 @@ def construct_fragment_update_sidecar(pid):
     relations = etree.SubElement(mdprops, "dc_relations")
     etree.SubElement(relations, "is_verwant_aan").text = pid
 
-    tree = etree.ElementTree(root)
     return etree.tostring(
         root, pretty_print=True, encoding="UTF-8", xml_declaration=True
     )
 
-def callback(ch, method, properties, body, ctx):
-    try:
-        event = json.loads(body)
-    except json.JSONDecodeError as error:
-        log.warning("Bad s3 event.", error=str(error))
-        return
 
+def handle_create_event(event: dict, properties, ctx: Context) -> bool:
+    """Handler for s3 create events"""
     # Check if item already in mediahaven based on key and md5
     mediahaven_service = MediahavenService(ctx)
     query_params = [
@@ -149,7 +142,7 @@ def callback(ch, method, properties, body, ctx):
         log.warning(
             "Item already archived", s3_object_key=get_from_event(event, "object_key")
         )
-        return
+        return True
 
     or_id = get_from_event(event, "tenant")
     org_service = OrganisationsService(ctx)
@@ -172,7 +165,7 @@ def callback(ch, method, properties, body, ctx):
         item_fragment_id = result["MediaDataList"][0]["Internal"]["FragmentId"]
 
         log.debug(f"Found pid: {item_pid} for media id: {media_id}")
-        
+
         pid = f"{item_pid}_{collateral_type}"
         dest_path = construct_destination_path(cp_name, ctx.config.app_cfg['collateral-destination-folder'])
         dest_filename = f"{pid}.xml"
@@ -181,7 +174,6 @@ def callback(ch, method, properties, body, ctx):
 
         essence_update_sidecar = construct_fragment_update_sidecar(pid)
         mediahaven_service.update_metadata(item_fragment_id, essence_update_sidecar)
-
     else:
         pid_service = PIDService(ctx)
         pid = pid_service.get_pid()
@@ -224,8 +216,141 @@ def callback(ch, method, properties, body, ctx):
 
     events = Events(ctx.config.app_cfg["rabbitmq"]["outgoing"], ctx)
     events.publish(json.dumps(param_dict), properties.correlation_id)
-
     return True
+
+
+def delete_media_object(mediahaven_service, fragment_id: str, reason: str) -> bool:
+    log.info(
+        f"Deleting fragment for object with fragment id: {fragment_id}",
+        fragment_id=fragment_id,
+    )
+    try:
+        mediahaven_service.delete_media_object(fragment_id, reason)
+    except (HTTPError, RequestException) as error:
+        log.error(
+            f"Error when deleting MH fragment with fragment ID: {fragment_id}",
+            error=error,
+        )
+        return False
+    return True
+
+
+def handle_remove_event(event: dict, properties, ctx: Context) -> bool:
+    """Handler for s3 removed events
+
+    First we query MH with the s3_object_key and s3_bucket
+
+    This results in the main object (= essence) and its real fragments.
+    The real fragments potentially have collaterals linked that need to be deleted.
+    So we query all the objects with the media ID of the fragments.
+    Of those we filter out the real fragments. We should end up with only the
+    collaterals. These will be deleted one by one. Finally, delete the essence.
+    """
+
+    mediahaven_service = MediahavenService(ctx)
+
+    # Query MH with the s3_bucket en s3_object_key
+    s3_bucket = get_from_event(event, "bucket")
+    s3_object_key = get_from_event(event, "object_key")
+    query_params = [
+        ("s3_object_key", f'"{s3_object_key}"'),
+        ("s3_bucket", f'"{s3_bucket}"'),
+    ]
+    try:
+        result = mediahaven_service.get_fragment(query_params, or_params=False)
+    except (HTTPError, RequestException) as error:
+        log.error(
+            f"Error when querying MH fragment with s3 bucket: {s3_bucket} and object key: {s3_object_key}",
+            error=error,
+        )
+        return False
+
+    if not result["MediaDataList"]:
+        log.info(f"No media object found with s3 bucket: {s3_bucket} and object key: {s3_object_key}")
+        return False
+
+    log.info(f"Removing media object with s3 bucket: {s3_bucket} and object key: {s3_object_key}")
+    items = result["MediaDataList"]
+
+    # Collect the Media ID (and Fragment ID) of the fragments. These will be used to remove the collaterals.
+    fragments = {}
+    for item in items:
+        if item["Internal"]["IsFragment"]:
+            fragments[item["Dynamic"]["dc_identifier_localid"]] = item["Internal"]["FragmentId"]
+
+    try:
+        # Get the Fragment ID of the essence to delete
+        fragment_id_essence = next(
+            item["Internal"]["FragmentId"]
+            for item in items
+            if not item["Internal"]["IsFragment"]
+        )
+    except StopIteration:
+        # Should not happen
+        return False
+
+    if fragments:
+        # Query all the objects with the media IDs of the fragments
+        query_params_media_ids = [
+            ("dc_identifier_localid", f"{media_id}") for media_id in fragments.keys()
+        ]
+        response = mediahaven_service.get_fragment(query_params_media_ids)
+        # Collect the Fragment IDs of the collaterals. The Media ID is used in the delete reason.
+        fragments_collateral = [
+            (item["Internal"]["FragmentId"], item["Dynamic"]["dc_identifier_localid"])
+            for item in response["MediaDataList"]
+            if not item["Internal"]["IsFragment"]
+        ]
+
+        # Delete the collaterals
+        for fragment_collateral in fragments_collateral:
+            # Get the Fragment ID of the fragment to which this collateral is linked to
+            local_id = fragment_collateral[1]
+            linked_fragment_id = fragments.get(local_id)
+            result = delete_media_object(
+                mediahaven_service,
+                fragment_collateral[0],
+                f'Deleted collateral with local_id: "{local_id}" linked to fragment with fragment_id: "{linked_fragment_id}". Essence was deleted via s3 delete-object.'
+            )
+            if not result:
+                return False
+            time.sleep(0.2)  # Sleep to not hit rate limit
+
+    # Delete the essence
+    return delete_media_object(
+        mediahaven_service,
+        fragment_id_essence,
+        f's3 delete-object for bucket: "{s3_bucket}" and key: "{s3_object_key}"'
+    )
+
+
+def calculate_handler(event: dict):
+    """ Factory method to return correct handler """
+    event_name = get_from_event(event, "event_name")
+    base_type = event_name.split(":")[0]
+    if base_type == "ObjectCreated":
+        return handle_create_event
+    elif base_type == "ObjectRemoved":
+        return handle_remove_event
+    else:
+        log.error("Unknown type of s3 event: {event_name}", s3_event=event)
+        raise ValueError(event_name)
+
+
+def callback(ch, method, properties, body, ctx):
+    try:
+        event = json.loads(body)
+    except json.JSONDecodeError as error:
+        log.warning("Bad s3 event.", error=str(error))
+        return False
+
+    try:
+        handler = calculate_handler(event)
+    except ValueError:
+        return False
+
+    result = handler(event, properties, ctx)
+    return result
 
 
 def main(ctx):

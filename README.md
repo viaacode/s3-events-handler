@@ -4,15 +4,32 @@ Nano borndigital for use in VRT v2 flow.
 
 ## Synopsis
 
-The nano borndigital is a service that generates a sidecar for an incoming essence. The generated XML get put onto the MediaHaven transport server and a message gets published so that the essence gets moved to the transport server.
+The nano borndigital is a service that handles incoming s3 events of type `ObjectCreated` and `ObjectRemoved`.
 
-The main flow:
+### Object Created
+
+This will generate a sidecar for an incoming essence. The generated XML gets put onto the MediaHaven transport server and a message gets published so that the essence gets moved to the transport server.
+
+The object-created flow:
+
 - Parse incoming S3 message
 - Check if item is not already in MediaHaven
 - Get PID from the PID webservice
 - Generate MediaHaven sidecar XML
 - FTP sidecar to MediaHaven transport server
 - Publish message to move the file from S3 to the transport server
+
+### Object Removed
+
+This will remove the essence and all of its collaterals in MediaHaven.
+
+The object-removed flow:
+
+- Query the essence from MediaHaven with the s3_object_key and s3_bucket
+- Collect all the local_ids of the fragments of the returned essence
+- Query the collaterals from MediaHaven based on those local_ids
+- Remove the collaterals
+- Remove the essence
 
 ## Prerequisites
 

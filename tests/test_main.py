@@ -7,7 +7,9 @@ from .mocks import mock_events, mock_ftp, mock_organisations_api, mock_mediahave
 from .resources import (
     S3_MOCK_ESSENCE_EVENT,
     S3_MOCK_COLLATERAL_EVENT,
-    MOCK_MEDIAHAVEN_EXTERNAL_METADATA
+    S3_MOCK_REMOVED_EVENT,
+    S3_MOCK_UNKNOWN_EVENT,
+    MOCK_MEDIAHAVEN_EXTERNAL_METADATA,
 )
 
 
@@ -24,7 +26,14 @@ def context():
     return Context(config)
 
 
-@pytest.mark.parametrize("body", [S3_MOCK_ESSENCE_EVENT, S3_MOCK_COLLATERAL_EVENT])
+@pytest.mark.parametrize(
+    "body",
+    [
+        S3_MOCK_ESSENCE_EVENT,
+        S3_MOCK_COLLATERAL_EVENT,
+        S3_MOCK_REMOVED_EVENT,
+    ]
+)
 def test_callback(
     body,
     context,
@@ -35,7 +44,21 @@ def test_callback(
 ):
     ex = Expando()
     ex.correlation_id = "a1b2c3"
-    callback(None, None, ex, body, context)
+    assert callback(None, None, ex, body, context)
+
+
+@pytest.mark.parametrize("body", [S3_MOCK_UNKNOWN_EVENT, ])
+def test_callback_unsuccessful(
+    body,
+    context,
+    mock_ftp,
+    mock_organisations_api,
+    mock_events,
+    mock_mediahaven_api
+):
+    ex = Expando()
+    ex.correlation_id = "a1b2c3"
+    assert not callback(None, None, ex, body, context)
 
 
 def test_construct_essence_sidecar():

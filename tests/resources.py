@@ -104,6 +104,96 @@ S3_MOCK_COLLATERAL_EVENT = """{
    ]
 }"""
 
+S3_MOCK_REMOVED_EVENT = """{  
+   "Records":[
+      {  
+         "eventVersion":"0.1",
+         "eventSource":"viaa:s3",
+         "eventTime":"2019-12-12T00:39:15.049Z",
+         "eventName":"ObjectRemoved:*",
+         "userIdentity":{  
+            "principalId":"Object Owner CN+OR-id"
+         },
+         "requestParameters":{  
+            "sourceIPAddress":"54.93.243.153"
+         },
+         "responseElements":{  
+            "x-viaa-request-id":"bb90f87be822889b21f197b43090cb4b"
+         },
+         "s3":{
+            "domain":{
+               "name":"s3"
+            },
+            "bucket":{
+               "name":"mam-collaterals",
+               "ownerIdentity":{
+                  "principalId":"Bucket Owner CN+OR-id"
+               },
+               "metadata":{
+                  "tenant": "OR-rf5kf25",
+                  "kind":"ingest"
+               }
+            },
+            "object":{  
+               "key":"TYPE/MEDIAID/blabla.xif",
+               "size":4248725,
+               "eTag":"77930bf06b236e089a22a255e6b28377",
+               "metadata":{
+                  "Type": "application/mxf",
+                  "Castor-System-Cid":"7da76343ad6bc9f2f739f0595a2756e4",
+                  "Content-Md5":"rbyRpD6YijtbdFuFKakLYQ=="
+               }
+            }
+         }
+      }
+   ]
+}"""
+
+S3_MOCK_UNKNOWN_EVENT = """{  
+   "Records":[
+      {  
+         "eventVersion":"0.1",
+         "eventSource":"viaa:s3",
+         "eventTime":"2019-12-12T00:39:15.049Z",
+         "eventName":"ObjectRestore:Post",
+         "userIdentity":{  
+            "principalId":"Object Owner CN+OR-id"
+         },
+         "requestParameters":{  
+            "sourceIPAddress":"54.93.243.153"
+         },
+         "responseElements":{  
+            "x-viaa-request-id":"bb90f87be822889b21f197b43090cb4b"
+         },
+         "s3":{
+            "domain":{
+               "name":"s3"
+            },
+            "bucket":{
+               "name":"mam-collaterals",
+               "ownerIdentity":{
+                  "principalId":"Bucket Owner CN+OR-id"
+               },
+               "metadata":{
+                  "tenant": "OR-rf5kf25",
+                  "kind":"ingest"
+               }
+            },
+            "object":{  
+               "key":"TYPE/MEDIAID/blabla.xif",
+               "size":4248725,
+               "eTag":"77930bf06b236e089a22a255e6b28377",
+               "metadata":{
+                  "Type": "application/mxf",
+                  "Castor-System-Cid":"7da76343ad6bc9f2f739f0595a2756e4",
+                  "Content-Md5":"rbyRpD6YijtbdFuFKakLYQ=="
+               }
+            }
+         }
+      }
+   ]
+}"""
+
 METADATA_DICT = {
     "Dynamic": {
         "s3_object_key": "191213-VAN___statement_De_ideale_wereld___Don_12_December_2019-1983-d5be522e-3609-417a-a1f4-5922854620c8.MXF",
