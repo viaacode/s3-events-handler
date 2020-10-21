@@ -36,6 +36,25 @@ config = ConfigParser()
 log = logging.get_logger(__name__, config=config)
 
 
+class NackException(Exception):
+    """ Exception raised when there is a situation in which handling
+    of the event should be stopped.
+    """
+
+    def __init__(self, message, requeue=False, **kwargs):
+        self.message = message
+        self.requeue = requeue
+        self.kwargs = kwargs
+
+
+def handle_nack_exception(nack_exception, channel, delivery_tag):
+    """ Log an error and send a nack to rabbit """
+    log.error(nack_exception.message, **nack_exception.kwargs)
+    if nack_exception.requeue:
+        time.sleep(10)
+    channel.basic_nack(delivery_tag=delivery_tag, requeue=nack_exception.requeue)
+
+
 def construct_destination_path(cp_name, folder):
     return f"/{cp_name}/{folder}"
 
@@ -136,21 +155,46 @@ def handle_create_event(event: dict, properties, ctx: Context) -> bool:
         ("s3_object_key", f'"{get_from_event(event, "object_key")}"'),
         ("md5", get_from_event(event, "md5")),
     ]
-    result = mediahaven_service.get_fragment(query_params)
+    try:
+        result = mediahaven_service.get_fragment(query_params)
+    except RequestException as error:
+        raise NackException(
+            "Error connecting to MediaHaven, retrying....",
+            error=error,
+            requeue=True,
+        )
+    except HTTPError as error:
+        raise NackException(
+            "Error occurred when querying MediaHaven",
+            query_params=query_params,
+            error=error,
+            error_message=error.response.text,
+        )
 
     if result["MediaDataList"]:
         log.warning(
             "Item already archived", s3_object_key=get_from_event(event, "object_key")
         )
-        return True
+        return
 
+    # Get cp_name for or_id
     or_id = get_from_event(event, "tenant")
-    org_service = OrganisationsService(ctx)
-    cp_name = org_service.get_organisation(or_id)["cp_name_mam"]
+    try:
+        org_service = OrganisationsService(ctx)
+        cp_name = org_service.get_organisation(or_id)["cp_name_mam"]
+    except RequestException as error:
+        raise NackException(
+            "Error connecting to Organisation API, retrying....",
+            error=error,
+            requeue=True,
+        )
+    except KeyError:
+        raise NackException(f"Organisation not found with or_id: {or_id}")
 
     # Check if we are dealing with essence or collateral
     bucket = get_from_event(event, "bucket")
     if bucket == "mam-collaterals":
+        # Handle collateral
         object_key = get_from_event(event, "object_key")
         collateral_type = object_key.split("/")[0]
         media_id = object_key.split("/")[1]
@@ -160,9 +204,30 @@ def handle_create_event(event: dict, properties, ctx: Context) -> bool:
         query_params = [
             ("dc_identifier_localid", media_id),
         ]
-        result = mediahaven_service.get_fragment(query_params)
-        item_pid = result["MediaDataList"][0]["Dynamic"]["PID"]
-        item_fragment_id = result["MediaDataList"][0]["Internal"]["FragmentId"]
+        try:
+            result = mediahaven_service.get_fragment(query_params)
+        except RequestException as error:
+            raise NackException(
+                "Error connecting to MediaHaven, retrying....",
+                error=error,
+                requeue=True,
+            )
+        except HTTPError as error:
+            raise NackException(
+                "Error occurred when querying MediaHaven",
+                query_params=query_params,
+                error=error,
+                error_message=error.response.text,
+            )
+
+        try:
+            item_pid = result["MediaDataList"][0]["Dynamic"]["PID"]
+            item_fragment_id = result["MediaDataList"][0]["Internal"]["FragmentId"]
+        except (IndexError, KeyError) as error:
+            raise NackException(
+                f"Item not found in MediaHaven for dc_identifier_localid: {media_id}",
+                error=error,
+            )
 
         log.debug(f"Found pid: {item_pid} for media id: {media_id}")
 
@@ -173,10 +238,34 @@ def handle_create_event(event: dict, properties, ctx: Context) -> bool:
         sidecar_xml = construct_collateral_sidecar(event, item_pid, media_id)
 
         essence_update_sidecar = construct_fragment_update_sidecar(pid)
-        mediahaven_service.update_metadata(item_fragment_id, essence_update_sidecar)
+        try:
+            mediahaven_service.update_metadata(item_fragment_id, essence_update_sidecar)
+        except RequestException as error:
+            raise NackException(
+                "Error connecting to MediaHaven, retrying....",
+                error=error,
+                requeue=True,
+            )
+        except HTTPError as error:
+            raise NackException(
+                "Error occurred when updating metadata of collateral",
+                fragment_id=item_fragment_id,
+                sidecar=essence_update_sidecar,
+                error=error,
+                error_message=error.response.text,
+            )
     else:
-        pid_service = PIDService(ctx)
-        pid = pid_service.get_pid()
+        # Handle essence
+        try:
+            pid_service = PIDService(ctx)
+            pid = pid_service.get_pid()
+        except (RequestException, IndexError, KeyError) as error:
+            raise NackException(
+                "Unable to get a PID, retrying...",
+                error=error,
+                requeue=True,
+            )
+
         log.info(f"PID received: {pid}")
 
         dest_path = construct_destination_path(cp_name, ctx.config.app_cfg['essence-destination-folder'])
@@ -207,8 +296,17 @@ def handle_create_event(event: dict, properties, ctx: Context) -> bool:
 
     log.debug(f"Destination: path={dest_path}, file_name={dest_filename}")
 
-    ftp = FTP(ctx)
-    ftp.put(sidecar_xml, dest_path, dest_filename)
+    # Transfer sidecar to FTP TRA
+    try:
+        ftp = FTP(ctx)
+        ftp.put(sidecar_xml, dest_path, dest_filename)
+    except Exception as error:
+        # Potential destructive action has happened, allowed to requeue?
+        raise NackException(
+            "Error transferring sidecar via FTP",
+            sidecar=sidecar_xml,
+            error=error
+        )
 
     # Request file transfer
     file_extension = os.path.splitext(get_from_event(event, "object_key"))[1]
@@ -216,7 +314,6 @@ def handle_create_event(event: dict, properties, ctx: Context) -> bool:
 
     events = Events(ctx.config.app_cfg["rabbitmq"]["outgoing"], ctx)
     events.publish(json.dumps(param_dict), properties.correlation_id)
-    return True
 
 
 def delete_media_object(mediahaven_service, fragment_id: str, reason: str) -> bool:
@@ -226,13 +323,19 @@ def delete_media_object(mediahaven_service, fragment_id: str, reason: str) -> bo
     )
     try:
         mediahaven_service.delete_media_object(fragment_id, reason)
-    except (HTTPError, RequestException) as error:
-        log.error(
-            f"Error when deleting MH fragment with fragment ID: {fragment_id}",
+    except RequestException as error:
+        raise NackException(
+            "Error connecting to MediaHaven, retrying....",
             error=error,
+            requeue=True,
         )
-        return False
-    return True
+    except HTTPError as error:
+        raise NackException(
+            f"Error when deleting MH fragment with fragment ID: {fragment_id}",
+            fragment_id=fragment_id,
+            error=error,
+            error_message=error.response.text,
+        )
 
 
 def handle_remove_event(event: dict, properties, ctx: Context) -> bool:
@@ -258,16 +361,23 @@ def handle_remove_event(event: dict, properties, ctx: Context) -> bool:
     ]
     try:
         result = mediahaven_service.get_fragment(query_params, or_params=False)
-    except (HTTPError, RequestException) as error:
-        log.error(
-            f"Error when querying MH fragment with s3 bucket: {s3_bucket} and object key: {s3_object_key}",
+    except RequestException as error:
+        raise NackException(
+            "Error connecting to MediaHaven, retrying....",
             error=error,
+            requeue=True,
         )
-        return False
+    except HTTPError as error:
+        raise NackException(
+            "Error occurred when querying MediaHaven",
+            query_params=query_params,
+            error=error,
+            error_message=error.response.text,
+        )
 
     if not result["MediaDataList"]:
         log.info(f"No media object found with s3 bucket: {s3_bucket} and object key: {s3_object_key}")
-        return False
+        return
 
     log.info(f"Removing media object with s3 bucket: {s3_bucket} and object key: {s3_object_key}")
     items = result["MediaDataList"]
@@ -286,15 +396,30 @@ def handle_remove_event(event: dict, properties, ctx: Context) -> bool:
             if not item["Internal"]["IsFragment"]
         )
     except StopIteration:
-        # Should not happen
-        return False
+        # Should not occur
+        return
 
     if fragments:
         # Query all the objects with the media IDs of the fragments
         query_params_media_ids = [
             ("dc_identifier_localid", f"{media_id}") for media_id in fragments.keys()
         ]
-        response = mediahaven_service.get_fragment(query_params_media_ids)
+        try:
+            response = mediahaven_service.get_fragment(query_params_media_ids)
+        except RequestException as error:
+            raise NackException(
+                "Error connecting to MediaHaven, retrying....",
+                error=error,
+                requeue=True,
+            )
+        except HTTPError as error:
+            raise NackException(
+                "Error occurred when querying MediaHaven",
+                query_params=query_params_media_ids,
+                error=error,
+                error_message=error.response.text,
+            )
+
         # Collect the Fragment IDs of the collaterals. The Media ID is used in the delete reason.
         fragments_collateral = [
             (item["Internal"]["FragmentId"], item["Dynamic"]["dc_identifier_localid"])
@@ -312,12 +437,10 @@ def handle_remove_event(event: dict, properties, ctx: Context) -> bool:
                 fragment_collateral[0],
                 f'Deleted collateral with local_id: "{local_id}" linked to fragment with fragment_id: "{linked_fragment_id}". Essence was deleted via s3 delete-object.'
             )
-            if not result:
-                return False
             time.sleep(0.2)  # Sleep to not hit rate limit
 
     # Delete the essence
-    return delete_media_object(
+    delete_media_object(
         mediahaven_service,
         fragment_id_essence,
         f's3 delete-object for bucket: "{s3_bucket}" and key: "{s3_object_key}"'
@@ -333,8 +456,7 @@ def calculate_handler(event: dict):
     elif base_type == "ObjectRemoved":
         return handle_remove_event
     else:
-        log.error("Unknown type of s3 event: {event_name}", s3_event=event)
-        raise ValueError(event_name)
+        raise NackException(f"Unknown type of s3 event: {event_name}", s3_event=event)
 
 
 def callback(ch, method, properties, body, ctx):
@@ -342,15 +464,17 @@ def callback(ch, method, properties, body, ctx):
         event = json.loads(body)
     except json.JSONDecodeError as error:
         log.warning("Bad s3 event.", error=str(error))
-        return False
+        ch.basic_nack(delivery_tag=method.delivery_tag)
+        return
 
     try:
         handler = calculate_handler(event)
-    except ValueError:
-        return False
+        handler(event, properties, ctx)
+    except NackException as error:
+        handle_nack_exception(error, ch, method.delivery_tag)
+        return
 
-    result = handler(event, properties, ctx)
-    return result
+    ch.basic_ack(delivery_tag=method.delivery_tag)
 
 
 def main(ctx):
@@ -363,8 +487,6 @@ def main(ctx):
         on_message_callback=lambda ch, method, properties, body: callback(
             ch, method, properties, body, ctx
         ),
-        # Ack the message when the callback fn returns
-        auto_ack=True,
     )
 
     log.info(f"Starting: listening for messages on q:{events.queue}.")

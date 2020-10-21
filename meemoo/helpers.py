@@ -163,7 +163,7 @@ class FTP(object):
             conn = BuiltinFTP(host=self.host, user=ftp_user, passwd=ftp_passwd)
         except Exception as e:
             log.error(e)
-            raise
+            raise e
         else:
             log.debug(f"Succesfully established connection to {self.host}")
             return conn
@@ -177,8 +177,9 @@ class FTP(object):
                 conn.cwd(destination_path)
                 stor_cmd = f"STOR {destination_filename}"
                 conn.storbinary(stor_cmd, BytesIO(content_bytes))
-            except Exception:
+            except Exception as e:
                 log.critical(f"Failed to put sidecar on {self.host} {destination_path}")
+                raise e
 
 
 # vim modeline
