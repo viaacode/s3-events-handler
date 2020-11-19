@@ -218,8 +218,16 @@ def handle_create_event(event: dict, properties, ctx: Context) -> bool:
     if bucket == "mam-collaterals":
         # Handle collateral
         object_key = get_from_event(event, "object_key")
-        collateral_type = object_key.split("/")[0]
-        media_id = object_key.split("/")[1]
+        try:
+            collateral_type = object_key.split("/")[0]
+            media_id = object_key.split("/")[1]
+        except IndexError as error:
+            # Object key is not properly formatted as <collateral_type>/<media_id>/ 
+            raise NackException(
+                f"Non-compliant object key for collateral: {object_key}",
+                error=error,
+            )
+
 
         log.debug(f"Received a {collateral_type} for media id: {media_id}")
 
