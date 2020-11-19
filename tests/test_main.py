@@ -1,4 +1,5 @@
 import json
+from unittest.mock import MagicMock
 
 import pytest
 from main import callback, construct_essence_sidecar, cp_names, get_cp_name
@@ -44,7 +45,10 @@ def test_callback(
 ):
     ex = Expando()
     ex.correlation_id = "a1b2c3"
-    assert callback(None, None, ex, body, context)
+    channel_mock = MagicMock()
+    callback(channel_mock, MagicMock(), ex, body, context)
+    assert channel_mock.basic_ack.call_count == 1
+    assert not channel_mock.basic_nack.call_count
 
 
 @pytest.mark.parametrize("body", [S3_MOCK_UNKNOWN_EVENT, ])
@@ -58,7 +62,10 @@ def test_callback_unsuccessful(
 ):
     ex = Expando()
     ex.correlation_id = "a1b2c3"
-    assert not callback(None, None, ex, body, context)
+    channel_mock = MagicMock()
+    callback(channel_mock, MagicMock(), ex, body, context)
+    assert channel_mock.basic_nack.call_count == 1
+    assert not channel_mock.basic_ack.call_count
 
 
 def test_construct_essence_sidecar():
