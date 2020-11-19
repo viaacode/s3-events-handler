@@ -2,7 +2,7 @@ import json
 from unittest.mock import MagicMock
 
 import pytest
-from main import callback, construct_essence_sidecar
+from main import callback, construct_essence_sidecar, cp_names, get_cp_name
 
 from .mocks import mock_events, mock_ftp, mock_organisations_api, mock_mediahaven_api
 from .resources import (
@@ -77,3 +77,21 @@ def test_construct_essence_sidecar():
 
     # ASSERT
     assert sidecar_xml.decode("utf-8") == MOCK_MEDIAHAVEN_EXTERNAL_METADATA
+
+
+def test_get_cp_name(context, mock_organisations_api):
+    or_id = "or_id"
+    assert or_id not in cp_names
+    name = get_cp_name("or_id", context)
+    assert name == "UNITTEST"
+    assert cp_names["or_id"] == name
+
+
+def test_get_cp_name_cached(context, mock_organisations_api):
+    or_id = "or_id_cached"
+    assert or_id not in cp_names
+    cp_name = "CP MAM NAME"
+    cp_names["or_id"] = cp_name
+    name = get_cp_name("or_id", context)
+    assert name != "UNITTEST"
+    assert name == cp_name

@@ -34,6 +34,7 @@ from viaa.observability import logging
 
 config = ConfigParser()
 log = logging.get_logger(__name__, config=config)
+cp_names = {}
 
 
 class NackException(Exception):
@@ -147,6 +148,37 @@ def construct_fragment_update_sidecar(pid):
     )
 
 
+def get_cp_name(or_id: str, ctx: Context) -> str:
+    """ Retrieves the CP MAM Name for a given OR ID.
+
+    The mapping between the OR ID and the CP MAM Name is cached.
+    If the mapping is not found, The organisations API will be queried to retrieve
+    that information. That information will be cached in a dictionary.
+
+    Arguments:
+        or_id {str} -- The OR ID
+        ctx {Context} -- The context
+    Returns:
+        str -- The CP MAM Name
+    """
+    if or_id in cp_names:
+        cp_name = cp_names[or_id]
+    else:
+        try:
+            org_service = OrganisationsService(ctx)
+            cp_name = org_service.get_organisation(or_id)["cp_name_mam"]
+            cp_names[or_id] = cp_name
+        except RequestException as error:
+            raise NackException(
+                "Error connecting to Organisation API, retrying....",
+                error=error,
+                requeue=True,
+            )
+        except KeyError:
+            raise NackException(f"Organisation not found with or_id: {or_id}")
+    return cp_name
+
+
 def handle_create_event(event: dict, properties, ctx: Context) -> bool:
     """Handler for s3 create events"""
     # Check if item already in mediahaven based on key and md5
@@ -179,17 +211,7 @@ def handle_create_event(event: dict, properties, ctx: Context) -> bool:
 
     # Get cp_name for or_id
     or_id = get_from_event(event, "tenant")
-    try:
-        org_service = OrganisationsService(ctx)
-        cp_name = org_service.get_organisation(or_id)["cp_name_mam"]
-    except RequestException as error:
-        raise NackException(
-            "Error connecting to Organisation API, retrying....",
-            error=error,
-            requeue=True,
-        )
-    except KeyError:
-        raise NackException(f"Organisation not found with or_id: {or_id}")
+    cp_name = get_cp_name(or_id, ctx)
 
     # Check if we are dealing with essence or collateral
     bucket = get_from_event(event, "bucket")
