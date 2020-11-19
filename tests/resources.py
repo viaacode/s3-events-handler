@@ -49,6 +49,7 @@ S3_MOCK_ESSENCE_EVENT = """{
                "size":4248725,
                "eTag":"77930bf06b236e089a22a255e6b28377",
                "metadata":{
+                  "md5sum":"1234abcd1234abcd1234abcd1234abcd",
                   "Type": "application/mxf",
                   "Castor-System-Cid":"7da76343ad6bc9f2f739f0595a2756e4",
                   "Content-Md5":"rbyRpD6YijtbdFuFKakLYQ=="
@@ -94,6 +95,7 @@ S3_MOCK_COLLATERAL_EVENT = """{
                "size":4248725,
                "eTag":"77930bf06b236e089a22a255e6b28377",
                "metadata":{
+                  "md5sum":"1234abcd1234abcd1234abcd1234abcd",
                   "Type": "application/mxf",
                   "Castor-System-Cid":"7da76343ad6bc9f2f739f0595a2756e4",
                   "Content-Md5":"rbyRpD6YijtbdFuFKakLYQ=="
@@ -139,6 +141,7 @@ S3_MOCK_REMOVED_EVENT = """{
                "size":4248725,
                "eTag":"77930bf06b236e089a22a255e6b28377",
                "metadata":{
+                  "md5sum":"1234abcd1234abcd1234abcd1234abcd",
                   "Type": "application/mxf",
                   "Castor-System-Cid":"7da76343ad6bc9f2f739f0595a2756e4",
                   "Content-Md5":"rbyRpD6YijtbdFuFKakLYQ=="
@@ -184,6 +187,7 @@ S3_MOCK_UNKNOWN_EVENT = """{
                "size":4248725,
                "eTag":"77930bf06b236e089a22a255e6b28377",
                "metadata":{
+                  "md5sum":"1234abcd1234abcd1234abcd1234abcd",
                   "Type": "application/mxf",
                   "Castor-System-Cid":"7da76343ad6bc9f2f739f0595a2756e4",
                   "Content-Md5":"rbyRpD6YijtbdFuFKakLYQ=="
@@ -212,7 +216,7 @@ MOCK_MEDIAHAVEN_EXTERNAL_METADATA = """<?xml version='1.0' encoding='UTF-8'?>
     <CP_id>OR-rf5kf25</CP_id>
     <sp_name>s3</sp_name>
     <PID>test_pid</PID>
-    <md5></md5>
+    <md5>1234abcd1234abcd1234abcd1234abcd</md5>
     <s3_domain>s3</s3_domain>
     <s3_bucket>MAM_HighresVideo</s3_bucket>
     <s3_object_key>191213-VAN___statement_De_ideale_wereld___Don_12_December_2019-1983-d5be522e-3609-417a-a1f4-5922854620c8.MXF</s3_object_key>

@@ -12,6 +12,7 @@
 from io import BytesIO
 from ftplib import FTP as BuiltinFTP
 from urllib.parse import urlparse
+import re
 
 # Third-party imports
 from viaa.configuration import ConfigParser
@@ -35,14 +36,21 @@ def try_to_find_md5(object_metadata):
     Args:
         object_metadata (dict): The object metadata sub-section of the S3-event.
     Returns:
-        str: The md5sum when found. An empty string ('') otherwise.
+        str: The md5sum when found.
+    Raises:
+        KeyError: The md5sum was not found or is semantically incorrect.
     """
     POSSIBLE_KEYS = ["x-md5sum-meta", "md5sum", "x-amz-meta-md5sum"]
+    md5 = ""
     for key in POSSIBLE_KEYS:
         if key in object_metadata.keys():
             log.debug(f"md5sum located in metadata-field: '{key}'")
-            return object_metadata[key]
-    return ""
+            md5 = object_metadata[key]
+    
+    if re.match("^[a-fA-F0-9]{32}$", md5):
+        return md5
+    else:
+        raise KeyError(f"md5 not found or semantically incorrect. Found: '{md5}'")
 
 
 def get_from_event(event, name):

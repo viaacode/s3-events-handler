@@ -183,10 +183,14 @@ def handle_create_event(event: dict, properties, ctx: Context) -> bool:
     """Handler for s3 create events"""
     # Check if item already in mediahaven based on key and md5
     mediahaven_service = MediahavenService(ctx)
-    query_params = [
-        ("s3_object_key", f'"{get_from_event(event, "object_key")}"'),
-        ("md5", get_from_event(event, "md5")),
-    ]
+    try:
+        query_params = [
+            ("s3_object_key", f'"{get_from_event(event, "object_key")}"'),
+            ("md5", get_from_event(event, "md5")),
+        ]
+    except KeyError as error:
+        raise NackException("Faulty md5 in the event.", error=error)
+
     try:
         result = mediahaven_service.get_fragment(query_params)
     except RequestException as error:
