@@ -46,7 +46,7 @@ def try_to_find_md5(object_metadata):
     Returns:
         str: The md5sum when found.
     Raises:
-        KeyError: The md5sum was not found or is semantically incorrect.
+        KeyError: The md5sum was not found or is syntactically incorrect.
     """
     POSSIBLE_KEYS = ["x-md5sum-meta", "md5sum", "x-amz-meta-md5sum"]
     md5 = ""
@@ -58,7 +58,7 @@ def try_to_find_md5(object_metadata):
     if re.match("^[a-fA-F0-9]{32}$", md5):
         return md5
     else:
-        raise InvalidEventException(f"md5 not found or semantically incorrect. Found: '{md5}'")
+        raise InvalidEventException(f"md5 not found or syntactically incorrect. Found: '{md5}'")
 
 
 def get_from_event(event, name):
