@@ -24,7 +24,7 @@ import time
 from lxml import etree
 from meemoo import Context
 from meemoo.events import Events
-from meemoo.helpers import FTP, get_from_event
+from meemoo.helpers import FTP, get_from_event, is_event_valid, InvalidEventException
 from requests.exceptions import HTTPError, RequestException
 
 # Local imports
@@ -187,6 +187,7 @@ def handle_create_event(event: dict, properties, ctx: Context) -> bool:
         ("s3_object_key", f'"{get_from_event(event, "object_key")}"'),
         ("md5", get_from_event(event, "md5")),
     ]
+
     try:
         result = mediahaven_service.get_fragment(query_params)
     except RequestException as error:
@@ -484,7 +485,8 @@ def calculate_handler(event: dict):
 def callback(ch, method, properties, body, ctx):
     try:
         event = json.loads(body)
-    except json.JSONDecodeError as error:
+        is_event_valid(event)
+    except (json.JSONDecodeError, InvalidEventException) as error:
         log.warning("Bad s3 event.", error=str(error))
         ch.basic_nack(delivery_tag=method.delivery_tag)
         return

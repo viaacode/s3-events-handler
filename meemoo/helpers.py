@@ -12,6 +12,7 @@
 from io import BytesIO
 from ftplib import FTP as BuiltinFTP
 from urllib.parse import urlparse
+import re
 
 # Third-party imports
 from viaa.configuration import ConfigParser
@@ -27,7 +28,15 @@ log = logging.get_logger(__name__, config=config)
 
 # Constants
 BASE_DOMAIN = "viaa.be"
+S3_FIELDS = ["bucket", "object_key", "domain", "tenant", "user", "md5", "event_name"] 
 
+class InvalidEventException(Exception):
+    """ Exception raised when not all required fields are present
+    """
+
+    def __init__(self, message, **kwargs):
+        self.message = message
+        self.kwargs = kwargs
 
 def try_to_find_md5(object_metadata):
     """Simple convenience function that allows to be able to try different
@@ -35,19 +44,25 @@ def try_to_find_md5(object_metadata):
     Args:
         object_metadata (dict): The object metadata sub-section of the S3-event.
     Returns:
-        str: The md5sum when found. An empty string ('') otherwise.
+        str: The md5sum when found.
+    Raises:
+        KeyError: The md5sum was not found or is syntactically incorrect.
     """
     POSSIBLE_KEYS = ["x-md5sum-meta", "md5sum", "x-amz-meta-md5sum"]
+    md5 = ""
     for key in POSSIBLE_KEYS:
         if key in object_metadata.keys():
             log.debug(f"md5sum located in metadata-field: '{key}'")
-            return object_metadata[key]
-    return ""
+            md5 = object_metadata[key]
+    
+    if re.match("^[a-fA-F0-9]{32}$", md5):
+        return md5
+    else:
+        raise InvalidEventException(f"md5 not found or syntactically incorrect. Found: '{md5}'")
 
 
 def get_from_event(event, name):
-    keys = ["bucket", "object_key", "domain", "tenant", "user", "md5", "event_name"]
-    assert name in keys, f'Unknown key: "{name}"'
+    assert name in S3_FIELDS, f'Unknown key: "{name}"'
     record = event["Records"][0]
     if name == "bucket":
         return record["s3"]["bucket"]["name"]
@@ -63,6 +78,13 @@ def get_from_event(event, name):
         return try_to_find_md5(record["s3"]["object"]["metadata"])
     elif name == "event_name":
         return record["eventName"]
+
+
+def is_event_valid(event):
+    try:
+        assert [field for field in S3_FIELDS if get_from_event(event, field)] == S3_FIELDS
+    except (AssertionError, KeyError, InvalidEventException) as error:
+        raise InvalidEventException("Not all fields are present in the event.", event=event, error=error)
 
 
 class SidecarBuilder(object):
