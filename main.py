@@ -496,7 +496,7 @@ def callback(ch, method, properties, body, ctx):
         is_event_valid(event)
     except (json.JSONDecodeError, InvalidEventException) as error:
         log.warning("Bad s3 event.", error=str(error))
-        ch.basic_nack(delivery_tag=method.delivery_tag)
+        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
         return
 
     try:
