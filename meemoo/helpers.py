@@ -79,6 +79,23 @@ def get_from_event(event, name):
     elif name == "event_name":
         return record["eventName"]
 
+def normalize_or_id(or_id):
+    """Return a "normalized" version of the `OR-id`. This means:
+    - a literal uppercase `OR`, followed by
+    - a "hyphen": `-` (U+002D), followed by
+    - a random lowercase 7 charachter alfanumeric string.
+    Eg., `OR-a1b2c3d`.
+
+    Raises `ValueError` upon invalid input.
+    """
+    NOID_LENGTH = 7
+    try:
+        prefix, noid = or_id.split('-')
+    except ValueError as e:
+        raise ValueError(f'Could not split "{or_id}" by "-".')
+    if len(noid) != NOID_LENGTH:
+        raise ValueError(f'Invalid noid length for "{or_id}": != {NOID_LENGTH}: found {len(noid)}')
+    return '-'.join((prefix.upper(), noid.lower()))
 
 def is_event_valid(event):
     try:
