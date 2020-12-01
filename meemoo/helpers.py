@@ -82,7 +82,7 @@ def get_from_event(event, name):
 def normalize_or_id(or_id):
     """Return a "normalized" version of the `OR-id`. This means:
     - a literal uppercase `OR`, followed by
-    - a "hyphen": `-` (U+002D), followed by
+    - a "hyphen-minus": `-` (U+002D), followed by
     - a random lowercase 7 charachter alfanumeric string.
     Eg., `OR-a1b2c3d`.
 
