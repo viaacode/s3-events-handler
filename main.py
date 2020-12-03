@@ -302,7 +302,7 @@ def handle_create_event(event: dict, properties, ctx: Context) -> bool:
         dest_path = construct_destination_path(cp_name, ctx.config.app_cfg['essence-destination-folder'])
         dest_filename = f"{pid}.xml"
 
-        sidecar_xml = construct_essence_sidecar(event, pid, construct_essence_sidecar)
+        sidecar_xml = construct_essence_sidecar(event, pid, cp_name)
 
     # # Build the sidecar
     # sidecar_builder = SidecarBuilder(ctx)
