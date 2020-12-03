@@ -75,7 +75,7 @@ def construct_fts_params_dict(event, pid, file_extension, dest_path, ctx):
     }
 
 
-def construct_essence_sidecar(event, pid):
+def construct_essence_sidecar(event, pid, cp_name):
     s3_object_key = get_from_event(event, "object_key")
 
     root = etree.Element("MediaHAVEN_external_metadata")
@@ -88,8 +88,8 @@ def construct_essence_sidecar(event, pid):
     etree.SubElement(root, "description").text = description
 
     mdprops = etree.SubElement(root, "MDProperties")
-    etree.SubElement(mdprops, "CP").text = "VRT"
-    etree.SubElement(mdprops, "CP_id").text = "OR-rf5kf25"
+    etree.SubElement(mdprops, "CP").text = cp_name
+    etree.SubElement(mdprops, "CP_id").text = get_from_event(event, "tenant")
     etree.SubElement(mdprops, "sp_name").text = "s3"
     etree.SubElement(mdprops, "PID").text = pid
     etree.SubElement(mdprops, "md5").text = get_from_event(event, "md5")
@@ -104,7 +104,7 @@ def construct_essence_sidecar(event, pid):
     )
 
 
-def construct_collateral_sidecar(event, pid, media_id):
+def construct_collateral_sidecar(event, pid, media_id, cp_name):
     s3_object_key = get_from_event(event, "object_key")
 
     root = etree.Element("MediaHAVEN_external_metadata")
@@ -117,8 +117,8 @@ def construct_collateral_sidecar(event, pid, media_id):
     etree.SubElement(root, "description").text = description
 
     mdprops = etree.SubElement(root, "MDProperties")
-    etree.SubElement(mdprops, "CP").text = "VRT"
-    etree.SubElement(mdprops, "CP_id").text = "OR-rf5kf25"
+    etree.SubElement(mdprops, "CP").text = cp_name
+    etree.SubElement(mdprops, "CP_id").text = get_from_event(event, "tenant")
     etree.SubElement(mdprops, "sp_name").text = "s3"
     etree.SubElement(mdprops, "PID").text = pid
     etree.SubElement(mdprops, "md5").text = get_from_event(event, "md5")
@@ -266,7 +266,7 @@ def handle_create_event(event: dict, properties, ctx: Context) -> bool:
         dest_path = construct_destination_path(cp_name, ctx.config.app_cfg['collateral-destination-folder'])
         dest_filename = f"{pid}.xml"
 
-        sidecar_xml = construct_collateral_sidecar(event, item_pid, media_id)
+        sidecar_xml = construct_collateral_sidecar(event, item_pid, media_id, cp_name)
 
         essence_update_sidecar = construct_fragment_update_sidecar(pid)
         try:
@@ -302,7 +302,7 @@ def handle_create_event(event: dict, properties, ctx: Context) -> bool:
         dest_path = construct_destination_path(cp_name, ctx.config.app_cfg['essence-destination-folder'])
         dest_filename = f"{pid}.xml"
 
-        sidecar_xml = construct_essence_sidecar(event, pid)
+        sidecar_xml = construct_essence_sidecar(event, pid, construct_essence_sidecar)
 
     # # Build the sidecar
     # sidecar_builder = SidecarBuilder(ctx)

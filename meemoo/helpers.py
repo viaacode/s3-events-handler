@@ -71,7 +71,7 @@ def get_from_event(event, name):
     elif name == "object_key":
         return record["s3"]["object"]["key"]
     elif name == "tenant":
-        return record["s3"]["bucket"]["metadata"]["tenant"]
+        return normalize_or_id(record["s3"]["bucket"]["metadata"]["tenant"])
     elif name == "user":
         return record["userIdentity"]["principalId"]
     elif name == "md5":
@@ -100,7 +100,7 @@ def normalize_or_id(or_id):
 def is_event_valid(event):
     try:
         assert [field for field in S3_FIELDS if get_from_event(event, field)] == S3_FIELDS
-    except (AssertionError, KeyError, InvalidEventException) as error:
+    except (AssertionError, KeyError, ValueError, InvalidEventException) as error:
         raise InvalidEventException("Not all fields are present in the event.", event=event, error=error)
 
 

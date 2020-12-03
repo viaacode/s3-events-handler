@@ -73,7 +73,7 @@ def test_construct_essence_sidecar():
     event = json.loads(S3_MOCK_ESSENCE_EVENT)
 
     # ACT
-    sidecar_xml = construct_essence_sidecar(event, "test_pid")
+    sidecar_xml = construct_essence_sidecar(event, "test_pid", "VRT")
 
     # ASSERT
     assert sidecar_xml.decode("utf-8") == MOCK_MEDIAHAVEN_EXTERNAL_METADATA
