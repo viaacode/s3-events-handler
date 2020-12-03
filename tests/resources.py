@@ -40,7 +40,7 @@ S3_MOCK_ESSENCE_EVENT = """{
                   "principalId":"Bucket Owner CN+OR-id"
                },
                "metadata":{
-                  "tenant": "OR-rf5kf25",
+                  "tenant": "or-rf5kf25",
                   "kind":"ingest"
                }
             },

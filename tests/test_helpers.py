@@ -27,6 +27,8 @@ class TestHelperFunctions(unittest.TestCase):
         self.assertEqual(bucket, "MAM_HighresVideo")
         event_name = get_from_event(event_dict, "event_name")
         self.assertEqual(event_name, "ObjectCreated:Put")
+        or_id = get_from_event(event_dict, "tenant")
+        self.assertEqual(or_id, "OR-rf5kf25")
 
     def test_normalize_or_id_valid(self):
         # Arrange
