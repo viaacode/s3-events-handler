@@ -71,7 +71,7 @@ def get_from_event(event, name):
     elif name == "object_key":
         return record["s3"]["object"]["key"]
     elif name == "tenant":
-        return record["s3"]["bucket"]["metadata"]["tenant"]
+        return normalize_or_id(record["s3"]["bucket"]["metadata"]["tenant"])
     elif name == "user":
         return record["userIdentity"]["principalId"]
     elif name == "md5":
@@ -79,11 +79,28 @@ def get_from_event(event, name):
     elif name == "event_name":
         return record["eventName"]
 
+def normalize_or_id(or_id):
+    """Return a "normalized" version of the `OR-id`. This means:
+    - a literal uppercase `OR`, followed by
+    - a "hyphen-minus": `-` (U+002D), followed by
+    - a random lowercase 7 charachter alfanumeric string.
+    Eg., `OR-a1b2c3d`.
+
+    Raises `ValueError` upon invalid input.
+    """
+    NOID_LENGTH = 7
+    try:
+        prefix, noid = or_id.split('-')
+    except ValueError as e:
+        raise ValueError(f'Could not split "{or_id}" by "-".')
+    if len(noid) != NOID_LENGTH:
+        raise ValueError(f'Invalid noid length for "{or_id}": != {NOID_LENGTH}: found {len(noid)}')
+    return '-'.join((prefix.upper(), noid.lower()))
 
 def is_event_valid(event):
     try:
         assert [field for field in S3_FIELDS if get_from_event(event, field)] == S3_FIELDS
-    except (AssertionError, KeyError, InvalidEventException) as error:
+    except (AssertionError, KeyError, ValueError, InvalidEventException) as error:
         raise InvalidEventException("Not all fields are present in the event.", event=event, error=error)
 
 

@@ -16,7 +16,7 @@
 
 import json
 import unittest
-from meemoo.helpers import get_from_event
+from meemoo.helpers import get_from_event, normalize_or_id
 from tests.resources import S3_MOCK_ESSENCE_EVENT
 
 
@@ -27,6 +27,56 @@ class TestHelperFunctions(unittest.TestCase):
         self.assertEqual(bucket, "MAM_HighresVideo")
         event_name = get_from_event(event_dict, "event_name")
         self.assertEqual(event_name, "ObjectCreated:Put")
+        or_id = get_from_event(event_dict, "tenant")
+        self.assertEqual(or_id, "OR-rf5kf25")
+
+    def test_normalize_or_id_valid(self):
+        # Arrange
+        or_id = 'or-a1b2c3d'
+        # Act
+        normalized_or_id = normalize_or_id(or_id)
+        # Assert
+        self.assertEqual(normalized_or_id, 'OR-a1b2c3d')
+
+    def test_normalize_or_id_valid_random(self):
+        # Arrange
+        or_id = 'OR-7p8tc89'
+        # Act
+        normalized_or_id = normalize_or_id(or_id)
+        # Assert
+        self.assertEqual(normalized_or_id, 'OR-7p8tc89')
+
+    def test_normalize_or_id_valid_diff_prefix(self):
+        # Arrange
+        or_id = 'mm-7p8tc89'
+        # Act
+        normalized_or_id = normalize_or_id(or_id)
+        # Assert
+        self.assertEqual(normalized_or_id, 'MM-7p8tc89')
+
+    def test_normalize_or_id_invalid_noid_length_too_short(self):
+        # Arrange
+        or_id = 'or-a1b2c3'
+        # Act and Assert
+        with self.assertRaises(ValueError) as error:
+            normalized_or_id = normalize_or_id(or_id)
+        self.assertTrue('Invalid noid length' in str(error.exception))
+
+    def test_normalize_or_id_invalid_noid_length_too_long(self):
+        # Arrange
+        or_id = 'or-a1b2c3da1b2c3d'
+        # Act and Assert
+        with self.assertRaises(ValueError) as error:
+            normalized_or_id = normalize_or_id(or_id)
+        self.assertTrue('Invalid noid length' in str(error.exception))
+
+    def test_normalize_or_id_invalid_no_hyphen_seperator(self):
+        # Arrange
+        or_id = 'or_a1b2c3d'
+        # Act and Assert
+        with self.assertRaises(ValueError) as error:
+            normalized_or_id = normalize_or_id(or_id)
+        self.assertTrue('Could not split' in str(error.exception))
 
 
 if __name__ == "__main__":
