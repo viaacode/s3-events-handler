@@ -270,7 +270,7 @@ def handle_create_event(event: dict, properties, ctx: Context) -> bool:
         dest_path = construct_destination_path(cp_name, ctx.config.app_cfg['collateral-destination-folder'])
         dest_filename = f"{pid}.xml"
 
-        if collateral_type == "openOt" or collateral_type == "closedOt":
+        if collateral_type in ("openOt", "closedOt"):
             object_use = "subtitle"
         else:
             object_use = "collateral"
