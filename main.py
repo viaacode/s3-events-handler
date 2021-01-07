@@ -98,13 +98,15 @@ def construct_essence_sidecar(event, pid, cp_name):
     etree.SubElement(mdprops, "s3_object_key").text = s3_object_key
     etree.SubElement(mdprops, "dc_source").text = s3_object_key
     etree.SubElement(mdprops, "s3_object_owner").text = get_from_event(event, "user")
+    etree.SubElement(mdprops, "object_level").text = "file"
+    etree.SubElement(mdprops, "object_use").text = "archive_master"
 
     return etree.tostring(
         root, pretty_print=True, encoding="UTF-8", xml_declaration=True
     )
 
 
-def construct_collateral_sidecar(event, pid, media_id, cp_name):
+def construct_collateral_sidecar(event, pid, media_id, cp_name, object_use):
     s3_object_key = get_from_event(event, "object_key")
 
     root = etree.Element("MediaHAVEN_external_metadata")
@@ -128,6 +130,8 @@ def construct_collateral_sidecar(event, pid, media_id, cp_name):
     etree.SubElement(mdprops, "dc_source").text = s3_object_key
     etree.SubElement(mdprops, "s3_object_owner").text = get_from_event(event, "user")
     etree.SubElement(mdprops, "dc_identifier_localid").text = media_id
+    etree.SubElement(mdprops, "object_level").text = "file"
+    etree.SubElement(mdprops, "object_use").text = object_use
 
     relations = etree.SubElement(mdprops, "dc_relations")
     etree.SubElement(relations, "is_verwant_aan").text = pid
@@ -266,7 +270,12 @@ def handle_create_event(event: dict, properties, ctx: Context) -> bool:
         dest_path = construct_destination_path(cp_name, ctx.config.app_cfg['collateral-destination-folder'])
         dest_filename = f"{pid}.xml"
 
-        sidecar_xml = construct_collateral_sidecar(event, item_pid, media_id, cp_name)
+        if collateral_type == "openOt" or collateral_type == "closedOt":
+            object_use = "subtitle"
+        else:
+            object_use = "collateral"
+
+        sidecar_xml = construct_collateral_sidecar(event, item_pid, media_id, cp_name, object_use)
 
         essence_update_sidecar = construct_fragment_update_sidecar(pid)
         try:

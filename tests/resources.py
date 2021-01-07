@@ -222,6 +222,8 @@ MOCK_MEDIAHAVEN_EXTERNAL_METADATA = """<?xml version='1.0' encoding='UTF-8'?>
     <s3_object_key>191213-VAN___statement_De_ideale_wereld___Don_12_December_2019-1983-d5be522e-3609-417a-a1f4-5922854620c8.MXF</s3_object_key>
     <dc_source>191213-VAN___statement_De_ideale_wereld___Don_12_December_2019-1983-d5be522e-3609-417a-a1f4-5922854620c8.MXF</dc_source>
     <s3_object_owner>Object Owner CN+OR-id</s3_object_owner>
+    <object_level>file</object_level>
+    <object_use>archive_master</object_use>
   </MDProperties>
 </MediaHAVEN_external_metadata>
 """
