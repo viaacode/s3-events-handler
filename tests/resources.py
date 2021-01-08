@@ -224,6 +224,7 @@ MOCK_MEDIAHAVEN_EXTERNAL_METADATA = """<?xml version='1.0' encoding='UTF-8'?>
     <s3_object_owner>Object Owner CN+OR-id</s3_object_owner>
     <object_level>file</object_level>
     <object_use>archive_master</object_use>
+    <ie_type>n/a</ie_type>
   </MDProperties>
 </MediaHAVEN_external_metadata>
 """

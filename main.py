@@ -100,6 +100,7 @@ def construct_essence_sidecar(event, pid, cp_name):
     etree.SubElement(mdprops, "s3_object_owner").text = get_from_event(event, "user")
     etree.SubElement(mdprops, "object_level").text = "file"
     etree.SubElement(mdprops, "object_use").text = "archive_master"
+    etree.SubElement(mdprops, "ie_type").text = "n/a"
 
     return etree.tostring(
         root, pretty_print=True, encoding="UTF-8", xml_declaration=True
@@ -132,6 +133,7 @@ def construct_collateral_sidecar(event, pid, media_id, cp_name, object_use):
     etree.SubElement(mdprops, "dc_identifier_localid").text = media_id
     etree.SubElement(mdprops, "object_level").text = "file"
     etree.SubElement(mdprops, "object_use").text = object_use
+    etree.SubElement(mdprops, "ie_type").text = "n/a"
 
     relations = etree.SubElement(mdprops, "dc_relations")
     etree.SubElement(relations, "is_verwant_aan").text = pid
