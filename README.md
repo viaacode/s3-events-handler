@@ -1,10 +1,10 @@
-# Nano Borndigital
+# S3 Events Handler
 
-Nano borndigital for use in VRT v2 flow.
+S3 events handler for use in VRT v2 flow.
 
 ## Synopsis
 
-The nano borndigital is a service that handles incoming s3 events of type `ObjectCreated` and `ObjectRemoved`.
+The S3 events handler is a service that handles incoming s3 events of type `ObjectCreated` and `ObjectRemoved`.
 
 ### Object Created
 
@@ -42,7 +42,7 @@ The object-removed flow:
 
 1. Clone this repository with:
 
-   `$ git clone https://github.com/viaacode/nano-borndigital.git`
+   `$ git clone https://github.com/viaacode/s3-events-handler.git`
 
 2. Change into the new directory.
 
@@ -89,8 +89,8 @@ is < 3. In that case, you probably also want to use `pip3` command.
 
 1. Build the container:
 
-   `$ docker build -t nano-borndigital .`
+   `$ docker build -t s3-events-handler .`
 
 2. Run the container (with specified `.env` file):
 
-   `$ docker run --env-file .env --rm nano-borndigital:latest`
+   `$ docker run --env-file .env --rm s3-events-handler:latest`
