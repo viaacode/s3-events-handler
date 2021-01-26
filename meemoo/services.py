@@ -163,18 +163,18 @@ class MediahavenService(Service):
         headers: dict = self._construct_headers()
         url: str = f"{self.host}media"
 
-        # or -> Construct URL query parameters as "+(k1:v1 k2:v2)"
-        # and -> Construct URL query parameters as "+(k1:v1) +(k2:v2)"
+        # or -> Construct URL query parameters as '+(k1:"v1" k2:"v2")'
+        # and -> Construct URL query parameters as '+(k1:"v1") +(k2:"v2")'
         query = (
-            f"+({' '.join([':'.join(k_v) for k_v in query_params])})"
+            '+(' + ' '.join([f'{k_v[0]}:"{k_v[1]}"' for k_v in query_params]) + ')'
             if or_params
-            else " ".join([f'+({":".join(k_v)})' for k_v in query_params])
+            else " ".join([f'+({k_v[0]}: "{k_v[1]}")' for k_v in query_params])
         )
 
         params_dict: dict = {
             "q": query,
         }
-        
+
         # Encode the spaces in the query parameters as %20 and not +
         params = urllib.parse.urlencode(params_dict, quote_via=urllib.parse.quote)
 
