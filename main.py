@@ -444,7 +444,7 @@ def handle_remove_event(event: dict, properties, ctx: Context) -> bool:
     if fragments:
         # Query all the objects with the media IDs of the fragments
         query_params_media_ids = [
-            ("dc_identifier_localid", f"{media_id}") for media_id in fragments.keys()
+            ("dc_identifier_localid", media_id) for media_id in fragments.keys()
         ]
         try:
             response = mediahaven_service.get_fragment(query_params_media_ids)
