@@ -190,7 +190,7 @@ def handle_create_event(event: dict, properties, ctx: Context) -> bool:
     # Check if item already in mediahaven based on key and md5
     mediahaven_service = MediahavenService(ctx)
     query_params = [
-        ("s3_object_key", f'"{get_from_event(event, "object_key")}"'),
+        ("s3_object_key", get_from_event(event, "object_key")),
         ("md5", get_from_event(event, "md5")),
     ]
 
@@ -398,8 +398,8 @@ def handle_remove_event(event: dict, properties, ctx: Context) -> bool:
     s3_bucket = get_from_event(event, "bucket")
     s3_object_key = get_from_event(event, "object_key")
     query_params = [
-        ("s3_object_key", f'"{s3_object_key}"'),
-        ("s3_bucket", f'"{s3_bucket}"'),
+        ("s3_object_key", s3_object_key),
+        ("s3_bucket", s3_bucket),
     ]
     try:
         result = mediahaven_service.get_fragment(query_params, or_params=False)
