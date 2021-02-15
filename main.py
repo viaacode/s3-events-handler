@@ -83,7 +83,7 @@ def construct_essence_sidecar(event, pid, cp_name):
 
     description = f"""Main fragment for essence:
     - filename: {s3_object_key}
-    - CP: VRT
+    - CP: {cp_name}
     """
     etree.SubElement(root, "description").text = description
 
@@ -115,7 +115,7 @@ def construct_collateral_sidecar(event, pid, media_id, cp_name, object_use):
 
     description = f"""Subtitles for essence:
     - filename: {s3_object_key}
-    - CP: VRT
+    - CP: {cp_name}
     """
     etree.SubElement(root, "description").text = description
 
