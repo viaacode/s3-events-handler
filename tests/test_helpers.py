@@ -16,7 +16,12 @@
 
 import json
 import unittest
-from meemoo.helpers import get_from_event, normalize_or_id
+from meemoo.helpers import (
+    get_from_event,
+    normalize_or_id,
+    is_event_valid,
+    InvalidEventException,
+)
 from tests.resources import S3_MOCK_ESSENCE_EVENT
 
 
@@ -78,6 +83,33 @@ class TestHelperFunctions(unittest.TestCase):
             normalized_or_id = normalize_or_id(or_id)
         self.assertTrue('Could not split' in str(error.exception))
 
+    def test_is_event_valid_valid(self):
+        # Arrange
+        event_dict = json.loads(S3_MOCK_ESSENCE_EVENT)
+        # Act
+        event_valid = is_event_valid(event_dict)
+        # Assert
+        self.assertIsNone(event_valid)
+
+    def test_is_event_valid_missing_field(self):
+        # Arrange
+        event_dict = json.loads(S3_MOCK_ESSENCE_EVENT)
+        event_dict['Records'][0]['s3'].pop('bucket')
+        # Act and assert
+        with self.assertRaises(InvalidEventException) as error:
+            event_valid = is_event_valid(event_dict)
+        self.assertTrue('Not all fields are present' in str(error.exception))
+
+    def test_is_event_valid_extra_fields(self):
+        # Arrange
+        event_dict = json.loads(S3_MOCK_ESSENCE_EVENT)
+        event_dict['extra_field_1'] = 'should'
+        event_dict['Records'][0]['extra_field_2'] = 'be'
+        event_dict['Records'][0]['s3']['extra_field_3'] = 'ignored'
+        # Act
+        event_valid = is_event_valid(event_dict)
+        # Assert
+        self.assertIsNone(event_valid)
 
 if __name__ == "__main__":
     unittest.main()
