@@ -17,6 +17,7 @@
 import json
 import unittest
 from meemoo.helpers import (
+    try_to_find_md5,
     get_from_event,
     normalize_or_id,
     is_event_valid,
@@ -26,6 +27,62 @@ from tests.resources import S3_MOCK_ESSENCE_EVENT
 
 
 class TestHelperFunctions(unittest.TestCase):
+    def test_try_to_find_md5_valid_x_md5sum_meta(self):
+        # Arrange
+        metadata = {'x-md5sum-meta': '1234abcd1234abcd1234abcd1234abcd'}
+        # Act
+        md5 = try_to_find_md5(metadata)
+        # Assert
+        self.assertEqual(md5, metadata['x-md5sum-meta'])
+
+    def test_try_to_find_md5_valid_md5sum(self):
+        # Arrange
+        metadata = {'md5sum': '1234abcd1234abcd1234abcd1234abcd'}
+        # Act
+        md5 = try_to_find_md5(metadata)
+        # Assert
+        self.assertEqual(md5, metadata['md5sum'])
+
+    def test_try_to_find_md5_valid_x_amz_meta_md5sum(self):
+        # Arrange
+        metadata = {'x-amz-meta-md5sum': '1234abcd1234abcd1234abcd1234abcd'}
+        # Act
+        md5 = try_to_find_md5(metadata)
+        # Assert
+        self.assertEqual(md5, metadata['x-amz-meta-md5sum'])
+
+    def test_try_to_find_md5_invalid_missing(self):
+        # Arrange
+        metadata = {}
+        # Act and assert
+        with self.assertRaises(InvalidEventException) as error:
+            md5 = try_to_find_md5(metadata)
+        self.assertTrue('not found or syntactically incorrect' in str(error.exception))
+
+    def test_try_to_find_md5_invalid_md5sum_too_short(self):
+        # Arrange
+        metadata = {'md5sum': '1234abcd'}
+        # Act and assert
+        with self.assertRaises(InvalidEventException) as error:
+            md5 = try_to_find_md5(metadata)
+        self.assertTrue('not found or syntactically incorrect' in str(error.exception))
+
+    def test_try_to_find_md5_invalid_md5sum_too_long(self):
+        # Arrange
+        metadata = {'md5sum': '1234abcd1234abcd1234abcd1234abcd1234abcd'}
+        # Act and assert
+        with self.assertRaises(InvalidEventException) as error:
+            md5 = try_to_find_md5(metadata)
+        self.assertTrue('not found or syntactically incorrect' in str(error.exception))
+
+    def test_try_to_find_md5_invalid_md5sum_invalid_characters(self):
+        # Arrange
+        metadata = {'md5sum': '1234efgh1234efgh1234efgh1234efgh'}
+        # Act and assert
+        with self.assertRaises(InvalidEventException) as error:
+            md5 = try_to_find_md5(metadata)
+        self.assertTrue('not found or syntactically incorrect' in str(error.exception))
+
     def test_get_from_event(self):
         event_dict = json.loads(S3_MOCK_ESSENCE_EVENT)
         bucket = get_from_event(event_dict, "bucket")
