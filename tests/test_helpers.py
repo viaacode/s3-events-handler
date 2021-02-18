@@ -54,7 +54,7 @@ class TestHelperFunctions(unittest.TestCase):
     def test_try_to_find_md5_invalid_missing(self):
         # Arrange
         metadata = {}
-        # Act and assert
+        # Act and Assert
         with self.assertRaises(InvalidEventException) as error:
             md5 = try_to_find_md5(metadata)
         self.assertTrue('not found or syntactically incorrect' in str(error.exception))
@@ -62,7 +62,7 @@ class TestHelperFunctions(unittest.TestCase):
     def test_try_to_find_md5_invalid_md5sum_too_short(self):
         # Arrange
         metadata = {'md5sum': '1234abcd'}
-        # Act and assert
+        # Act and Assert
         with self.assertRaises(InvalidEventException) as error:
             md5 = try_to_find_md5(metadata)
         self.assertTrue('not found or syntactically incorrect' in str(error.exception))
@@ -70,7 +70,7 @@ class TestHelperFunctions(unittest.TestCase):
     def test_try_to_find_md5_invalid_md5sum_too_long(self):
         # Arrange
         metadata = {'md5sum': '1234abcd1234abcd1234abcd1234abcd1234abcd'}
-        # Act and assert
+        # Act and Assert
         with self.assertRaises(InvalidEventException) as error:
             md5 = try_to_find_md5(metadata)
         self.assertTrue('not found or syntactically incorrect' in str(error.exception))
@@ -78,7 +78,7 @@ class TestHelperFunctions(unittest.TestCase):
     def test_try_to_find_md5_invalid_md5sum_invalid_characters(self):
         # Arrange
         metadata = {'md5sum': '1234efgh1234efgh1234efgh1234efgh'}
-        # Act and assert
+        # Act and Assert
         with self.assertRaises(InvalidEventException) as error:
             md5 = try_to_find_md5(metadata)
         self.assertTrue('not found or syntactically incorrect' in str(error.exception))
@@ -152,7 +152,7 @@ class TestHelperFunctions(unittest.TestCase):
         # Arrange
         event_dict = json.loads(S3_MOCK_ESSENCE_EVENT)
         event_dict['Records'][0]['s3'].pop('bucket')
-        # Act and assert
+        # Act and Assert
         with self.assertRaises(InvalidEventException) as error:
             event_valid = is_event_valid(event_dict)
         self.assertTrue('Not all fields are present' in str(error.exception))
