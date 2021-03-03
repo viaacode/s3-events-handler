@@ -19,6 +19,7 @@
 import json
 import os
 import time
+import re
 
 # 3d party imports
 from lxml import etree
