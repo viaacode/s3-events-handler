@@ -29,6 +29,7 @@ log = logging.get_logger(__name__, config=config)
 # Constants
 BASE_DOMAIN = "viaa.be"
 S3_FIELDS = ["bucket", "object_key", "domain", "tenant", "user", "md5", "event_name"] 
+REQUIRED_S3_FIELDS = ["bucket", "object_key", "domain", "tenant", "user", "event_name"] 
 
 class InvalidEventException(Exception):
     """ Exception raised when not all required fields are present
@@ -54,11 +55,7 @@ def try_to_find_md5(object_metadata):
         if key in object_metadata.keys():
             log.debug(f"md5sum located in metadata-field: '{key}'")
             md5 = object_metadata[key]
-    
-    if re.match("^[a-fA-F0-9]{32}$", md5):
-        return md5
-    else:
-        raise InvalidEventException(f"md5 not found or syntactically incorrect. Found: '{md5}'")
+    return md5
 
 
 def get_from_event(event, name):
@@ -99,7 +96,7 @@ def normalize_or_id(or_id):
 
 def is_event_valid(event):
     try:
-        assert [field for field in S3_FIELDS if get_from_event(event, field)] == S3_FIELDS
+        assert [field for field in S3_FIELDS if get_from_event(event, field)].sort() == REQUIRED_S3_FIELDS.sort()
     except (AssertionError, KeyError, ValueError, InvalidEventException) as error:
         raise InvalidEventException("Not all fields are present in the event.", event=event, error=error)
 
