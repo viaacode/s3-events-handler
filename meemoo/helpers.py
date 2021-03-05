@@ -96,7 +96,9 @@ def normalize_or_id(or_id):
 
 def is_event_valid(event):
     try:
-        assert [field for field in S3_FIELDS if get_from_event(event, field)].sort() == REQUIRED_S3_FIELDS.sort()
+        fields_present_in_event = [field for field in S3_FIELDS if get_from_event(event, field)]
+        
+        assert set(REQUIRED_S3_FIELDS).issubset(set(fields_present_in_event))
     except (AssertionError, KeyError, ValueError, InvalidEventException) as error:
         raise InvalidEventException("Not all fields are present in the event.", event=event, error=error)
 

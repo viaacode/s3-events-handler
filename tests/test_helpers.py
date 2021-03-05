@@ -16,8 +16,8 @@
 
 import json
 import unittest
-from meemoo.helpers import get_from_event, normalize_or_id
-from tests.resources import S3_MOCK_ESSENCE_EVENT
+from meemoo.helpers import get_from_event, normalize_or_id, is_event_valid, InvalidEventException
+from tests.resources import S3_MOCK_ESSENCE_EVENT, S3_MOCK_INVALID_EVENT, S3_MOCK_ESSENCE_EVENT_WITHOUT_MD5
 
 
 class TestHelperFunctions(unittest.TestCase):
@@ -78,6 +78,24 @@ class TestHelperFunctions(unittest.TestCase):
             normalized_or_id = normalize_or_id(or_id)
         self.assertTrue('Could not split' in str(error.exception))
 
+    def test_is_event_valid_with_valid_event(self):
+        # Arrange
+        event = json.loads(S3_MOCK_ESSENCE_EVENT)
+        # Act and Assert
+        is_event_valid(event)
+
+    def test_is_event_valid_with_valid_event_no_md5(self):
+        # Arrange
+        event = json.loads(S3_MOCK_ESSENCE_EVENT_WITHOUT_MD5)
+        # Act and Assert
+        is_event_valid(event)
+
+    def test_is_event_valid_with_invalid_event(self):
+        # Arrange
+        event = json.loads(S3_MOCK_INVALID_EVENT)
+        # Act and Assert
+        with self.assertRaises(InvalidEventException) as error:
+            is_event_valid(event)
 
 if __name__ == "__main__":
     unittest.main()
