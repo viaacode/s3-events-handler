@@ -198,6 +198,96 @@ S3_MOCK_UNKNOWN_EVENT = """{
    ]
 }"""
 
+S3_MOCK_ESSENCE_EVENT_WITHOUT_MD5 = """{  
+   "Records":[
+      {  
+         "eventVersion":"0.1",
+         "eventSource":"viaa:s3",
+         "eventTime":"2019-12-12T00:39:15.049Z",
+         "eventName":"ObjectCreated:Put",
+         "userIdentity":{  
+            "principalId":"Object Owner CN+OR-id"
+         },
+         "requestParameters":{  
+            "sourceIPAddress":"54.93.243.153"
+         },
+         "responseElements":{  
+            "x-viaa-request-id":"bb90f87be822889b21f197b43090cb4a"
+         },
+         "s3":{
+            "domain":{
+               "name":"s3"
+            },
+            "bucket":{
+               "name":"MAM_HighresVideo",
+               "ownerIdentity":{
+                  "principalId":"Bucket Owner CN+OR-id"
+               },
+               "metadata":{
+                  "tenant": "or-rf5kf25",
+                  "kind":"ingest"
+               }
+            },
+            "object":{  
+               "key":"191213-VAN___statement_De_ideale_wereld___Don_12_December_2019-1983-d5be522e-3609-417a-a1f4-5922854620c8.MXF",
+               "size":4248725,
+               "eTag":"77930bf06b236e089a22a255e6b28377",
+               "metadata":{
+                  "Type": "application/mxf",
+                  "Castor-System-Cid":"7da76343ad6bc9f2f739f0595a2756e4",
+                  "Content-Md5":"rbyRpD6YijtbdFuFKakLYQ=="
+               }
+            }
+         }
+      }
+   ]
+}"""
+
+S3_MOCK_INVALID_EVENT = """{  
+   "Records":[
+      {  
+         "eventVersion":"0.1",
+         "eventSource":"viaa:s3",
+         "eventTime":"2019-12-12T00:39:15.049Z",
+         "eventName":"ObjectCreated:Put",
+         "userIdentity":{  
+            "principalId":"Object Owner CN+OR-id"
+         },
+         "requestParameters":{  
+            "sourceIPAddress":"54.93.243.153"
+         },
+         "responseElements":{  
+            "x-viaa-request-id":"bb90f87be822889b21f197b43090cb4a"
+         },
+         "s3":{
+            "domain":{
+               "name":"s3"
+            },
+            "bucket":{
+               "ownerIdentity":{
+                  "principalId":"Bucket Owner CN+OR-id"
+               },
+               "metadata":{
+                  "tenant": "or-rf5kf25",
+                  "kind":"ingest"
+               }
+            },
+            "object":{  
+               "key":"191213-VAN___statement_De_ideale_wereld___Don_12_December_2019-1983-d5be522e-3609-417a-a1f4-5922854620c8.MXF",
+               "size":4248725,
+               "eTag":"77930bf06b236e089a22a255e6b28377",
+               "metadata":{
+                  "md5sum":"1234abcd1234abcd1234abcd1234abcd",
+                  "Type": "application/mxf",
+                  "Castor-System-Cid":"7da76343ad6bc9f2f739f0595a2756e4",
+                  "Content-Md5":"rbyRpD6YijtbdFuFKakLYQ=="
+               }
+            }
+         }
+      }
+   ]
+}"""
+
 METADATA_DICT = {
     "Dynamic": {
         "s3_object_key": "191213-VAN___statement_De_ideale_wereld___Don_12_December_2019-1983-d5be522e-3609-417a-a1f4-5922854620c8.MXF",
@@ -216,7 +306,6 @@ MOCK_MEDIAHAVEN_EXTERNAL_METADATA = """<?xml version='1.0' encoding='UTF-8'?>
     <CP_id>OR-rf5kf25</CP_id>
     <sp_name>s3</sp_name>
     <PID>test_pid</PID>
-    <md5>1234abcd1234abcd1234abcd1234abcd</md5>
     <s3_domain>s3</s3_domain>
     <s3_bucket>MAM_HighresVideo</s3_bucket>
     <s3_object_key>191213-VAN___statement_De_ideale_wereld___Don_12_December_2019-1983-d5be522e-3609-417a-a1f4-5922854620c8.MXF</s3_object_key>
@@ -225,6 +314,7 @@ MOCK_MEDIAHAVEN_EXTERNAL_METADATA = """<?xml version='1.0' encoding='UTF-8'?>
     <object_level>file</object_level>
     <object_use>archive_master</object_use>
     <ie_type>n/a</ie_type>
+    <md5>1234abcd1234abcd1234abcd1234abcd</md5>
   </MDProperties>
 </MediaHAVEN_external_metadata>
 """
