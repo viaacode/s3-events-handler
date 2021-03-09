@@ -61,42 +61,6 @@ def test_try_to_find_md5_valid_x_amz_meta_md5sum():
     assert md5 == metadata["x-amz-meta-md5sum"]
 
 
-def test_try_to_find_md5_invalid_missing():
-    # Arrange
-    metadata = {}
-    # Act and Assert
-    with raises(InvalidEventException) as excinfo:
-        md5 = try_to_find_md5(metadata)
-    assert "not found or syntactically incorrect" in str(excinfo.value)
-
-
-def test_try_to_find_md5_invalid_md5sum_too_short():
-    # Arrange
-    metadata = {"md5sum": "1234abcd"}
-    # Act and Assert
-    with raises(InvalidEventException) as excinfo:
-        md5 = try_to_find_md5(metadata)
-    assert "not found or syntactically incorrect" in str(excinfo.value)
-
-
-def test_try_to_find_md5_invalid_md5sum_too_long():
-    # Arrange
-    metadata = {"md5sum": "1234abcd1234abcd1234abcd1234abcd1234abcd"}
-    # Act and Assert
-    with raises(InvalidEventException) as excinfo:
-        md5 = try_to_find_md5(metadata)
-    assert "not found or syntactically incorrect" in str(excinfo.value)
-
-
-def test_try_to_find_md5_invalid_md5sum_invalid_characters():
-    # Arrange
-    metadata = {"md5sum": "1234efgh1234efgh1234efgh1234efgh"}
-    # Act and Assert
-    with raises(InvalidEventException) as excinfo:
-        md5 = try_to_find_md5(metadata)
-    assert "not found or syntactically incorrect" in str(excinfo.value)
-
-
 def test_get_from_event():
     event_dict = json.loads(S3_MOCK_ESSENCE_EVENT)
     bucket = get_from_event(event_dict, "bucket")
