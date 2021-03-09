@@ -19,6 +19,7 @@
 import json
 import os
 import time
+import re
 
 # 3d party imports
 from lxml import etree
@@ -83,7 +84,7 @@ def construct_essence_sidecar(event, pid, cp_name):
 
     description = f"""Main fragment for essence:
     - filename: {s3_object_key}
-    - CP: VRT
+    - CP: {cp_name}
     """
     etree.SubElement(root, "description").text = description
 
@@ -92,7 +93,6 @@ def construct_essence_sidecar(event, pid, cp_name):
     etree.SubElement(mdprops, "CP_id").text = get_from_event(event, "tenant")
     etree.SubElement(mdprops, "sp_name").text = "s3"
     etree.SubElement(mdprops, "PID").text = pid
-    etree.SubElement(mdprops, "md5").text = get_from_event(event, "md5")
     etree.SubElement(mdprops, "s3_domain").text = get_from_event(event, "domain")
     etree.SubElement(mdprops, "s3_bucket").text = get_from_event(event, "bucket")
     etree.SubElement(mdprops, "s3_object_key").text = s3_object_key
@@ -101,6 +101,10 @@ def construct_essence_sidecar(event, pid, cp_name):
     etree.SubElement(mdprops, "object_level").text = "file"
     etree.SubElement(mdprops, "object_use").text = "archive_master"
     etree.SubElement(mdprops, "ie_type").text = "n/a"
+
+    # Only add md5 if valid and available from the event.
+    if re.match("^[a-fA-F0-9]{32}$", get_from_event(event, "md5")):
+        etree.SubElement(mdprops, "md5").text = get_from_event(event, "md5")
 
     return etree.tostring(
         root, pretty_print=True, encoding="UTF-8", xml_declaration=True
@@ -115,7 +119,7 @@ def construct_collateral_sidecar(event, pid, media_id, cp_name, object_use):
 
     description = f"""Subtitles for essence:
     - filename: {s3_object_key}
-    - CP: VRT
+    - CP: {cp_name}
     """
     etree.SubElement(root, "description").text = description
 
@@ -124,7 +128,6 @@ def construct_collateral_sidecar(event, pid, media_id, cp_name, object_use):
     etree.SubElement(mdprops, "CP_id").text = get_from_event(event, "tenant")
     etree.SubElement(mdprops, "sp_name").text = "s3"
     etree.SubElement(mdprops, "PID").text = pid
-    etree.SubElement(mdprops, "md5").text = get_from_event(event, "md5")
     etree.SubElement(mdprops, "s3_domain").text = get_from_event(event, "domain")
     etree.SubElement(mdprops, "s3_bucket").text = get_from_event(event, "bucket")
     etree.SubElement(mdprops, "s3_object_key").text = s3_object_key
@@ -134,6 +137,10 @@ def construct_collateral_sidecar(event, pid, media_id, cp_name, object_use):
     etree.SubElement(mdprops, "object_level").text = "file"
     etree.SubElement(mdprops, "object_use").text = object_use
     etree.SubElement(mdprops, "ie_type").text = "n/a"
+
+    # Only add md5 if valid and available from the event.
+    if re.match("^[a-fA-F0-9]{32}$", get_from_event(event, "md5")):
+        etree.SubElement(mdprops, "md5").text = get_from_event(event, "md5")
 
     relations = etree.SubElement(mdprops, "dc_relations")
     etree.SubElement(relations, "is_verwant_aan").text = pid

@@ -27,7 +27,7 @@ from meemoo.helpers import (
     is_event_valid,
     InvalidEventException,
 )
-from tests.resources import S3_MOCK_ESSENCE_EVENT
+from tests.resources import S3_MOCK_ESSENCE_EVENT, S3_MOCK_INVALID_EVENT, S3_MOCK_ESSENCE_EVENT_WITHOUT_MD5
 
 
 def test_try_to_find_md5_valid_x_md5sum_meta():
@@ -154,17 +154,25 @@ def test_normalize_or_id_invalid_no_hyphen_seperator():
     # Act and Assert
     with raises(ValueError) as excinfo:
         normalized_or_id = normalize_or_id(or_id)
-    assert "Could not split" in str(excinfo.value)
-
-
-def test_is_event_valid_valid():
+        assert "Could not split" in str(excinfo.value)
+def test_is_event_valid_with_valid_event(self):
     # Arrange
-    event_dict = json.loads(S3_MOCK_ESSENCE_EVENT)
-    # Act
-    event_valid = is_event_valid(event_dict)
-    # Assert
-    assert event_valid == None
+    event = json.loads(S3_MOCK_ESSENCE_EVENT)
+    # Act and Assert
+    is_event_valid(event)
 
+def test_is_event_valid_with_valid_event_no_md5(self):
+    # Arrange
+    event = json.loads(S3_MOCK_ESSENCE_EVENT_WITHOUT_MD5)
+    # Act and Assert
+    is_event_valid(event)
+
+def test_is_event_valid_with_invalid_event(self):
+    # Arrange
+    event = json.loads(S3_MOCK_INVALID_EVENT)
+    # Act and Assert
+    with self.assertRaises(InvalidEventException) as error:
+        is_event_valid(event)
 
 def test_is_event_valid_missing_field():
     # Arrange
@@ -186,6 +194,5 @@ def test_is_event_valid_extra_fields():
     event_valid = is_event_valid(event_dict)
     # Assert
     assert event_valid == None
-
 
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4 smartindent
