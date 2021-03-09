@@ -103,7 +103,7 @@ def test_normalize_or_id_invalid_noid_length_too_short():
     or_id = "or-a1b2c3"
     # Act and Assert
     with raises(ValueError) as excinfo:
-        normalized_or_id = normalize_or_id(or_id)
+        normalize_or_id(or_id)
     assert "Invalid noid length" in str(excinfo.value)
 
 
@@ -112,7 +112,7 @@ def test_normalize_or_id_invalid_noid_length_too_long():
     or_id = "or-a1b2c3da1b2c3d"
     # Act and Assert
     with raises(ValueError) as excinfo:
-        normalized_or_id = normalize_or_id(or_id)
+        normalize_or_id(or_id)
     assert "Invalid noid length" in str(excinfo.value)
 
 
@@ -121,7 +121,7 @@ def test_normalize_or_id_invalid_no_hyphen_seperator():
     or_id = "or_a1b2c3d"
     # Act and Assert
     with raises(ValueError) as excinfo:
-        normalized_or_id = normalize_or_id(or_id)
+        normalize_or_id(or_id)
         assert "Could not split" in str(excinfo.value)
 
 
@@ -143,7 +143,7 @@ def test_is_event_valid_with_invalid_event():
     # Arrange
     event = json.loads(S3_MOCK_INVALID_EVENT)
     # Act and Assert
-    with raises(InvalidEventException) as error:
+    with raises(InvalidEventException):
         is_event_valid(event)
 
 
@@ -153,7 +153,7 @@ def test_is_event_valid_missing_field():
     event_dict["Records"][0]["s3"].pop("bucket")
     # Act and Assert
     with raises(InvalidEventException) as excinfo:
-        event_valid = is_event_valid(event_dict)
+        is_event_valid(event_dict)
     assert "Not all fields are present" in str(excinfo.value)
 
 
