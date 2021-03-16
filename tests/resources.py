@@ -347,5 +347,15 @@ MOCK_MEDIAHAVEN_EXTERNAL_METADATA_COLLATERAL = """<?xml version='1.0' encoding='
   </MDProperties>
 </MediaHAVEN_external_metadata>
 """
+
+MOCK_MEDIAHAVEN_FRAGMENT_UPDATE = """<?xml version='1.0' encoding='UTF-8'?>
+<MediaHAVEN_external_metadata>
+  <MDProperties>
+    <dc_relations>
+      <is_verwant_aan>test_pid</is_verwant_aan>
+    </dc_relations>
+  </MDProperties>
+</MediaHAVEN_external_metadata>
+"""
 # vim modeline
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4 smartindent

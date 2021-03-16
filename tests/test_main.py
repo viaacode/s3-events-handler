@@ -19,6 +19,7 @@ from .resources import (
     S3_MOCK_UNKNOWN_EVENT,
     MOCK_MEDIAHAVEN_EXTERNAL_METADATA,
     MOCK_MEDIAHAVEN_EXTERNAL_METADATA_COLLATERAL,
+    MOCK_MEDIAHAVEN_FRAGMENT_UPDATE,
 )
 
 
@@ -101,6 +102,14 @@ def test_construct_collateral_sidecar():
 
     # ASSERT
     assert sidecar_xml.decode("utf-8") == MOCK_MEDIAHAVEN_EXTERNAL_METADATA_COLLATERAL
+
+
+def test_construct_fragment_update_sidecar():
+    # ACT
+    sidecar_xml = construct_fragment_update_sidecar("test_pid")
+
+    # ASSERT
+    assert sidecar_xml.decode("utf-8") == MOCK_MEDIAHAVEN_FRAGMENT_UPDATE
 
 
 def test_get_cp_name(context, mock_organisations_api):
