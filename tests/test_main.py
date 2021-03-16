@@ -2,7 +2,14 @@ import json
 from unittest.mock import MagicMock
 
 import pytest
-from main import callback, construct_essence_sidecar, cp_names, get_cp_name
+from main import (
+        callback,
+        construct_collateral_sidecar,
+        construct_essence_sidecar,
+        construct_fragment_update_sidecar,
+        cp_names,
+        get_cp_name,
+)
 
 from .mocks import mock_events, mock_ftp, mock_organisations_api, mock_mediahaven_api
 from .resources import (
@@ -11,6 +18,7 @@ from .resources import (
     S3_MOCK_REMOVED_EVENT,
     S3_MOCK_UNKNOWN_EVENT,
     MOCK_MEDIAHAVEN_EXTERNAL_METADATA,
+    MOCK_MEDIAHAVEN_EXTERNAL_METADATA_COLLATERAL,
 )
 
 
@@ -77,6 +85,22 @@ def test_construct_essence_sidecar():
 
     # ASSERT
     assert sidecar_xml.decode("utf-8") == MOCK_MEDIAHAVEN_EXTERNAL_METADATA
+
+
+def test_construct_collateral_sidecar():
+    # ARRANGE
+    event = json.loads(S3_MOCK_COLLATERAL_EVENT)
+
+    # ACT
+    sidecar_xml = construct_collateral_sidecar(event,
+                                               "test_pid",
+                                               "media_id",
+                                               "VRT",
+                                               "metadata"
+                                               )
+
+    # ASSERT
+    assert sidecar_xml.decode("utf-8") == MOCK_MEDIAHAVEN_EXTERNAL_METADATA_COLLATERAL
 
 
 def test_get_cp_name(context, mock_organisations_api):
