@@ -27,5 +27,3 @@ app:
             passwd: !ENV ${MEDIAHAVEN_API_PASSWD}
     organisations-api:
         host: !ENV ${ORGANISATIONS_API_HOST}
-    essence-destination-folder: !ENV ${ESSENCE_DESTINATION_FOLDER}
-    collateral-destination-folder: !ENV ${COLLATERAL_DESTINATION_FOLDER}
