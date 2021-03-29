@@ -26,6 +26,7 @@ from meemoo.helpers import (
     normalize_or_id,
     is_event_valid,
     InvalidEventException,
+    get_destination_for_cp
 )
 from tests.resources import (
     S3_MOCK_ESSENCE_EVENT,
@@ -168,5 +169,47 @@ def test_is_event_valid_extra_fields():
     # Assert
     assert event_valid is None
 
+def test_production_vrt_destination():
+    # Act
+    destination = get_destination_for_cp("production", "vrt", "essence")
+    # Assert
+    assert destination == "TAPE-SHARE-EVENTS"
+
+def test_production_vrt_destination():
+    # Act
+    destination = get_destination_for_cp("production", "vrt", "collateral")
+    # Assert
+    assert destination == "DISK-SHARE-EVENTS"
+
+
+def test_production_testbeeld_destination():
+    # Act
+    destination = get_destination_for_cp("production", "testbeeld", "essence")
+    # Assert
+    assert destination == "DISK-SHARE-EVENTS"
+
+def test_qas_vrt_destination():
+    # Act
+    destination = get_destination_for_cp("qas", "vrt", "essence")
+    # Assert
+    assert destination == "DISK-SHARE-EVENTS"
+
+def test_qas_testbeeld_destination():
+    # Act
+    destination = get_destination_for_cp("qas", "testbeeld", "essence")
+    # Assert
+    assert destination == "DISK-SHARE-EVENTS"
+
+def test_unknown_environment_destination():
+    # Act
+    destination = get_destination_for_cp("xxxxx", "vrt", "essence")
+    # Assert
+    assert destination == "DISK-SHARE-EVENTS"
+
+def test_unknown_cp_destination():
+    # Act
+    destination = get_destination_for_cp("production", "meemoo", "essence")
+    # Assert
+    assert destination == "DISK-SHARE-EVENTS"
 
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4 smartindent
