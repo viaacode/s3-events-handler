@@ -100,4 +100,4 @@ def test_get_cp_name_none(context, mock_organisations_api):
     or_id = "or_id_none"
     assert or_id not in cp_names
     with pytest.raises(NackException) as exception_info:
-        name = get_cp_name("or_id_none", context)
+        name = get_cp_name(or_id, context)
