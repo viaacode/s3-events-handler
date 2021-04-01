@@ -17,7 +17,7 @@
 import json
 
 # External imports
-from pytest import raises
+import pytest
 
 # Internal imports
 from meemoo.helpers import (
@@ -103,7 +103,7 @@ def test_normalize_or_id_invalid_noid_length_too_short():
     # Arrange
     or_id = "or-a1b2c3"
     # Act and Assert
-    with raises(ValueError) as excinfo:
+    with pytest.raises(ValueError) as excinfo:
         normalize_or_id(or_id)
     assert "Invalid noid length" in str(excinfo.value)
 
@@ -112,7 +112,7 @@ def test_normalize_or_id_invalid_noid_length_too_long():
     # Arrange
     or_id = "or-a1b2c3da1b2c3d"
     # Act and Assert
-    with raises(ValueError) as excinfo:
+    with pytest.raises(ValueError) as excinfo:
         normalize_or_id(or_id)
     assert "Invalid noid length" in str(excinfo.value)
 
@@ -121,7 +121,7 @@ def test_normalize_or_id_invalid_no_hyphen_seperator():
     # Arrange
     or_id = "or_a1b2c3d"
     # Act and Assert
-    with raises(ValueError) as excinfo:
+    with pytest.raises(ValueError) as excinfo:
         normalize_or_id(or_id)
         assert "Could not split" in str(excinfo.value)
 
@@ -144,7 +144,7 @@ def test_is_event_valid_with_invalid_event():
     # Arrange
     event = json.loads(S3_MOCK_INVALID_EVENT)
     # Act and Assert
-    with raises(InvalidEventException):
+    with pytest.raises(InvalidEventException):
         is_event_valid(event)
 
 
@@ -153,7 +153,7 @@ def test_is_event_valid_missing_field():
     event_dict = json.loads(S3_MOCK_ESSENCE_EVENT)
     event_dict["Records"][0]["s3"].pop("bucket")
     # Act and Assert
-    with raises(InvalidEventException) as excinfo:
+    with pytest.raises(InvalidEventException) as excinfo:
         is_event_valid(event_dict)
     assert "Not all fields are present" in str(excinfo.value)
 
@@ -169,47 +169,24 @@ def test_is_event_valid_extra_fields():
     # Assert
     assert event_valid is None
 
-def test_production_vrt_destination():
+@pytest.mark.parametrize(
+    "environment, cp, file_type, expected_destination",
+    [
+        ("production", "vrt", "essence", "TAPE-SHARE-EVENTS"),
+        ("production", "vrt", "collateral", "DISK-SHARE-EVENTS"),
+        ("production", "testbeeld", "essence", "DISK-SHARE-EVENTS"),
+        ("qas", "vrt", "essence", "DISK-SHARE-EVENTS"),
+        ("qas", "testbeeld", "essence", "DISK-SHARE-EVENTS"),
+        ("xxxxx", "vrt", "essence", "DISK-SHARE-EVENTS"),
+        ("production", "meemoo", "essence", "DISK-SHARE-EVENTS"),
+        ("production", "vrt", "xxxxx", "DISK-SHARE-EVENTS"),
+    ],
+)
+def test_file_destination(environment, cp, file_type, expected_destination):
     # Act
-    destination = get_destination_for_cp("production", "vrt", "essence")
+    destination = get_destination_for_cp(environment, cp, file_type)
     # Assert
-    assert destination == "TAPE-SHARE-EVENTS"
+    assert destination == expected_destination
 
-def test_production_vrt_destination():
-    # Act
-    destination = get_destination_for_cp("production", "vrt", "collateral")
-    # Assert
-    assert destination == "DISK-SHARE-EVENTS"
-
-
-def test_production_testbeeld_destination():
-    # Act
-    destination = get_destination_for_cp("production", "testbeeld", "essence")
-    # Assert
-    assert destination == "DISK-SHARE-EVENTS"
-
-def test_qas_vrt_destination():
-    # Act
-    destination = get_destination_for_cp("qas", "vrt", "essence")
-    # Assert
-    assert destination == "DISK-SHARE-EVENTS"
-
-def test_qas_testbeeld_destination():
-    # Act
-    destination = get_destination_for_cp("qas", "testbeeld", "essence")
-    # Assert
-    assert destination == "DISK-SHARE-EVENTS"
-
-def test_unknown_environment_destination():
-    # Act
-    destination = get_destination_for_cp("xxxxx", "vrt", "essence")
-    # Assert
-    assert destination == "DISK-SHARE-EVENTS"
-
-def test_unknown_cp_destination():
-    # Act
-    destination = get_destination_for_cp("production", "meemoo", "essence")
-    # Assert
-    assert destination == "DISK-SHARE-EVENTS"
 
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4 smartindent
