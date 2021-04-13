@@ -93,12 +93,9 @@ def test_construct_collateral_sidecar():
     event = json.loads(S3_MOCK_COLLATERAL_EVENT)
 
     # ACT
-    sidecar_xml = construct_collateral_sidecar(event,
-                                               "test_pid",
-                                               "media_id",
-                                               "VRT",
-                                               "metadata"
-                                               )
+    sidecar_xml = construct_collateral_sidecar(
+        event, "test_pid", "media_id", "VRT", "metadata"
+    )
 
     # ASSERT
     assert sidecar_xml.decode("utf-8") == MOCK_MEDIAHAVEN_EXTERNAL_METADATA_COLLATERAL
