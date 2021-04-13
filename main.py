@@ -181,7 +181,10 @@ def get_cp_name(or_id: str, ctx: Context) -> str:
         try:
             org_service = OrganisationsService(ctx)
             cp_name = org_service.get_organisation(or_id)["cp_name_mam"]
-            cp_names[or_id] = cp_name
+            if cp_name is None:
+                raise NackException(f"No cp_name_mam found for or_id {or_id}")
+            else:
+                cp_names[or_id] = cp_name
         except RequestException as error:
             raise NackException(
                 "Error connecting to Organisation API, retrying....",
