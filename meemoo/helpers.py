@@ -9,6 +9,7 @@
 #
 
 # System imports
+import os
 from io import BytesIO
 from ftplib import FTP as BuiltinFTP
 from urllib.parse import urlparse
@@ -18,6 +19,7 @@ import re
 from viaa.configuration import ConfigParser
 from viaa.observability import logging
 from lxml import etree
+import yaml
 
 # Local imports
 
@@ -38,6 +40,20 @@ class InvalidEventException(Exception):
     def __init__(self, message, **kwargs):
         self.message = message
         self.kwargs = kwargs
+
+def get_destination_for_cp(environment: str, cp_name: str, file_type: str):
+    # Default location
+    destination = "DISK-SHARE-EVENTS"
+
+    with open(os.getcwd() + "/destination_config.yml", "r") as ymlfile:
+        destinations = yaml.load(ymlfile, Loader=yaml.FullLoader)
+    
+    try:
+        destination = destinations[environment][cp_name][file_type]
+    except KeyError as ke:
+        log.info(f"No destination configured for content partner '{cp_name}' with type '{file_type}' in '{environment}'")
+
+    return destination
 
 def try_to_find_md5(object_metadata):
     """Simple convenience function that allows to be able to try different

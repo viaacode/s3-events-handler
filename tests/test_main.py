@@ -9,8 +9,8 @@ from main import (
         construct_fragment_update_sidecar,
         cp_names,
         get_cp_name,
+        NackException
 )
-
 from .mocks import mock_events, mock_ftp, mock_organisations_api, mock_mediahaven_api
 from .resources import (
     S3_MOCK_ESSENCE_EVENT,
@@ -125,3 +125,9 @@ def test_get_cp_name_cached(context, mock_organisations_api):
     name = get_cp_name("or_id", context)
     assert name != "UNITTEST"
     assert name == cp_name
+
+def test_get_cp_name_none(context, mock_organisations_api):
+    or_id = "or_id_none"
+    assert or_id not in cp_names
+    with pytest.raises(NackException) as exception_info:
+        name = get_cp_name(or_id, context)

@@ -25,7 +25,7 @@ import re
 from lxml import etree
 from meemoo import Context
 from meemoo.events import Events
-from meemoo.helpers import FTP, get_from_event, is_event_valid, InvalidEventException
+from meemoo.helpers import FTP, get_from_event, is_event_valid, InvalidEventException, get_destination_for_cp
 from requests.exceptions import HTTPError, RequestException
 
 # Local imports
@@ -57,8 +57,9 @@ def handle_nack_exception(nack_exception, channel, delivery_tag):
     channel.basic_nack(delivery_tag=delivery_tag, requeue=nack_exception.requeue)
 
 
-def construct_destination_path(cp_name, folder):
-    return f"/{cp_name}/{folder}"
+def construct_destination_path(environment, cp_name, file_type):
+    destination_folder = get_destination_for_cp(environment, cp_name, file_type)
+    return f"/{cp_name}/{destination_folder}"
 
 
 def construct_fts_params_dict(event, pid, file_extension, dest_path, ctx):
@@ -180,7 +181,10 @@ def get_cp_name(or_id: str, ctx: Context) -> str:
         try:
             org_service = OrganisationsService(ctx)
             cp_name = org_service.get_organisation(or_id)["cp_name_mam"]
-            cp_names[or_id] = cp_name
+            if cp_name is None:
+                raise NackException(f"No cp_name_mam found for or_id {or_id}")
+            else:
+                cp_names[or_id] = cp_name
         except RequestException as error:
             raise NackException(
                 "Error connecting to Organisation API, retrying....",
@@ -276,7 +280,7 @@ def handle_create_event(event: dict, properties, ctx: Context) -> bool:
         log.debug(f"Found pid: {item_pid} for media id: {media_id}")
 
         pid = f"{item_pid}_{collateral_type}"
-        dest_path = construct_destination_path(cp_name, ctx.config.app_cfg['collateral-destination-folder'])
+        dest_path = construct_destination_path(ctx.config.app_config["environment"], cp_name, "collateral")
         dest_filename = f"{pid}.xml"
 
         if collateral_type in ("openOt", "closedOt"):
@@ -317,7 +321,7 @@ def handle_create_event(event: dict, properties, ctx: Context) -> bool:
 
         log.info(f"PID received: {pid}")
 
-        dest_path = construct_destination_path(cp_name, ctx.config.app_cfg['essence-destination-folder'])
+        dest_path = construct_destination_path(ctx.config.app_config["environment"], cp_name, "essence")
         dest_filename = f"{pid}.xml"
 
         sidecar_xml = construct_essence_sidecar(event, pid, cp_name)

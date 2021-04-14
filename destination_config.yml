@@ -1,0 +1,14 @@
+production:
+  vrt: 
+    essence: "TAPE-SHARE-EVENTS"
+    collateral: "DISK-SHARE-EVENTS"
+  testbeeld:
+    essence: "DISK-SHARE-EVENTS"
+    collateral: "DISK-SHARE-EVENTS"
+qas:
+  vrt: 
+    essence: "DISK-SHARE-EVENTS"
+    collateral: "DISK-SHARE-EVENTS"
+  testbeeld:
+    essence: "DISK-SHARE-EVENTS"
+    collateral: "DISK-SHARE-EVENTS"
