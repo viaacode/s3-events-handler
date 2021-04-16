@@ -280,7 +280,7 @@ def handle_create_event(event: dict, properties, ctx: Context) -> bool:
         log.debug(f"Found pid: {item_pid} for media id: {media_id}")
 
         pid = f"{item_pid}_{collateral_type}"
-        dest_path = construct_destination_path(ctx.config.app_config["environment"], cp_name, "collateral")
+        dest_path = construct_destination_path(ctx.config.app_cfg["environment"], cp_name, "collateral")
         dest_filename = f"{pid}.xml"
 
         if collateral_type in ("openOt", "closedOt"):
@@ -321,7 +321,7 @@ def handle_create_event(event: dict, properties, ctx: Context) -> bool:
 
         log.info(f"PID received: {pid}")
 
-        dest_path = construct_destination_path(ctx.config.app_config["environment"], cp_name, "essence")
+        dest_path = construct_destination_path(ctx.config.app_cfg["environment"], cp_name, "essence")
         dest_filename = f"{pid}.xml"
 
         sidecar_xml = construct_essence_sidecar(event, pid, cp_name)
