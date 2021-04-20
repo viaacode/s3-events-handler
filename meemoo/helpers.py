@@ -13,7 +13,6 @@ import os
 from io import BytesIO
 from ftplib import FTP as BuiltinFTP
 from urllib.parse import urlparse
-import re
 
 # Third-party imports
 from viaa.configuration import ConfigParser
@@ -235,6 +234,27 @@ class FTP(object):
                 log.critical(f"Failed to put sidecar on {self.host} {destination_path}")
                 raise e
 
+
+def make_url(base_url, *path):
+    """Creates a valid url.
+
+    Args:
+        base_url (string): The base url.
+        *path (variable length argument list, optional):
+            The path to be appended to the base url.
+
+    Returns:
+        url (string): The created url.
+
+    Raises a TypeError if base_url is None.
+    """
+
+    if base_url is None:
+        raise TypeError('base_url is required')
+    url = base_url.rstrip('/')  # Remove optional trailing slash
+    for item in path:
+        url = f"{url}/{item}"
+    return url
 
 # vim modeline
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
