@@ -61,9 +61,7 @@ def try_to_find_md5(object_metadata):
     Args:
         object_metadata (dict): The object metadata sub-section of the S3-event.
     Returns:
-        str: The md5sum when found.
-    Raises:
-        KeyError: The md5sum was not found or is syntactically incorrect.
+        str: The md5sum when found, an empty string otherwise.
     """
     POSSIBLE_KEYS = ["x-md5sum-meta", "md5sum", "x-amz-meta-md5sum"]
     md5 = ""
