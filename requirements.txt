@@ -8,7 +8,7 @@ pyyaml==5.3.1
 requests==2.23.0
 six==1.14.0
 structlog==20.1.0
-urllib3==1.25.9
+urllib3==1.26.5
 viaa-chassis==0.2.0rc1
 pytest==5.4.1
 pytest-cov==2.10.1
