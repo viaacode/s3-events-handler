@@ -129,14 +129,26 @@ def test_get_cp_name_cached(context, mock_organisations_api):
     assert name == cp_name
 
 
-def test_query_params_item_ingested(context, mock_organisations_api):
+def test_query_params_item_ingested():
     event = json.loads(S3_MOCK_ESSENCE_EVENT)
-    cp_name = "cp"
-    params = query_params_item_ingested(event, cp_name)
+    params = query_params_item_ingested(event, "cp")
     assert params == [
         (
             "s3_object_key",
             "191213-VAN___statement_De_ideale_wereld___Don_12_December_2019-1983-d5be522e-3609-417a-a1f4-5922854620c8.MXF",
+        ),
+        ("md5", "1234abcd1234abcd1234abcd1234abcd"),
+    ]
+
+@pytest.mark.parametrize("cp", ["cp", "VRT"])
+def test_query_params_item_ingested_collateral(cp):
+    """The item is a collateral, so check on md5 regardless of CP"""
+    event = json.loads(S3_MOCK_COLLATERAL_EVENT)
+    params = query_params_item_ingested(event, cp)
+    assert params == [
+        (
+            "s3_object_key",
+            "TYPE/MEDIAID/blabla.xif",
         ),
         ("md5", "1234abcd1234abcd1234abcd1234abcd"),
     ]
@@ -151,7 +163,7 @@ def test_query_params_item_ingested(context, mock_organisations_api):
     ],
 )
 def test_query_params_item_ingested_no_md5(cp, body):
-    event = json.loads(S3_MOCK_ESSENCE_EVENT_WITHOUT_MD5)
+    event = json.loads(body)
     params = query_params_item_ingested(event, cp)
     assert params == [
         (

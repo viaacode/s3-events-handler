@@ -201,7 +201,9 @@ def query_params_item_ingested(event: dict, cp_name: str) -> List[Tuple[str, str
     """ Construct the query parameters to check if an item is already in the MAM.
 
     A check on S3 object key is always needed.
-    A check on md5 is only executed if there is an md5 and if the CP is not VRT.
+
+    A check on md5 is only executed if there is an md5 and
+    the CP is not VRT unless the item is a collateral.
 
     Returns:
         List[Tuple[str, str]] -- The query params.
@@ -211,10 +213,15 @@ def query_params_item_ingested(event: dict, cp_name: str) -> List[Tuple[str, str
 
     # Check based on md5 if the md5 is available and the CP is not VRT
     md5 = get_from_event(event, "md5")
-    if md5 and cp_name.upper() not in ("VRT"):
+    if md5 and (cp_name.upper() not in ("VRT") or is_collateral(event)):
         query_params.append(("md5", md5))
 
     return query_params
+
+
+def is_collateral(event: dict) -> bool:
+    """Check if the event is a collateral."""
+    return get_from_event(event, "bucket") == "mam-collaterals"
 
 
 def handle_create_event(event: dict, properties, ctx: Context) -> bool:
@@ -251,8 +258,7 @@ def handle_create_event(event: dict, properties, ctx: Context) -> bool:
         return
 
     # Check if we are dealing with essence or collateral
-    bucket = get_from_event(event, "bucket")
-    if bucket == "mam-collaterals":
+    if is_collateral(event):
         # Handle collateral
         object_key = get_from_event(event, "object_key")
         try:
