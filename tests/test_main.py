@@ -9,7 +9,8 @@ from main import (
         construct_fragment_update_sidecar,
         cp_names,
         get_cp_name,
-        NackException
+        NackException,
+        query_params_item_ingested,
 )
 from .mocks import mock_events, mock_ftp, mock_organisations_api, mock_mediahaven_api
 from .resources import (
@@ -17,6 +18,7 @@ from .resources import (
     S3_MOCK_COLLATERAL_EVENT,
     S3_MOCK_REMOVED_EVENT,
     S3_MOCK_UNKNOWN_EVENT,
+    S3_MOCK_ESSENCE_EVENT_WITHOUT_MD5,
     MOCK_MEDIAHAVEN_EXTERNAL_METADATA,
     MOCK_MEDIAHAVEN_EXTERNAL_METADATA_COLLATERAL,
     MOCK_MEDIAHAVEN_FRAGMENT_UPDATE,
@@ -126,8 +128,46 @@ def test_get_cp_name_cached(context, mock_organisations_api):
     assert name != "UNITTEST"
     assert name == cp_name
 
-def test_get_cp_name_none(context, mock_organisations_api):
-    or_id = "or_id_none"
-    assert or_id not in cp_names
-    with pytest.raises(NackException) as exception_info:
-        name = get_cp_name(or_id, context)
+
+def test_query_params_item_ingested():
+    event = json.loads(S3_MOCK_ESSENCE_EVENT)
+    params = query_params_item_ingested(event, "cp")
+    assert params == [
+        (
+            "s3_object_key",
+            "191213-VAN___statement_De_ideale_wereld___Don_12_December_2019-1983-d5be522e-3609-417a-a1f4-5922854620c8.MXF",
+        ),
+        ("md5", "1234abcd1234abcd1234abcd1234abcd"),
+    ]
+
+@pytest.mark.parametrize("cp", ["cp", "VRT"])
+def test_query_params_item_ingested_collateral(cp):
+    """The item is a collateral, so check on md5 regardless of CP"""
+    event = json.loads(S3_MOCK_COLLATERAL_EVENT)
+    params = query_params_item_ingested(event, cp)
+    assert params == [
+        (
+            "s3_object_key",
+            "TYPE/MEDIAID/blabla.xif",
+        ),
+        ("md5", "1234abcd1234abcd1234abcd1234abcd"),
+    ]
+
+
+@pytest.mark.parametrize(
+    "cp, body",
+    [
+        ("cp", S3_MOCK_ESSENCE_EVENT_WITHOUT_MD5),
+        ("VRT", S3_MOCK_ESSENCE_EVENT),
+        ("VRT", S3_MOCK_ESSENCE_EVENT_WITHOUT_MD5),
+    ],
+)
+def test_query_params_item_ingested_no_md5(cp, body):
+    event = json.loads(body)
+    params = query_params_item_ingested(event, cp)
+    assert params == [
+        (
+            "s3_object_key",
+            "191213-VAN___statement_De_ideale_wereld___Don_12_December_2019-1983-d5be522e-3609-417a-a1f4-5922854620c8.MXF",
+        )
+    ]

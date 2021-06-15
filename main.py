@@ -20,6 +20,7 @@ import json
 import os
 import time
 import re
+from typing import List, Tuple
 
 # 3d party imports
 from lxml import etree
@@ -196,14 +197,45 @@ def get_cp_name(or_id: str, ctx: Context) -> str:
     return cp_name
 
 
+def query_params_item_ingested(event: dict, cp_name: str) -> List[Tuple[str, str]]:
+    """ Construct the query parameters to check if an item is already in the MAM.
+
+    A check on S3 object key is always needed.
+
+    A check on md5 is only executed if there is an md5 and
+    the CP is not VRT unless the item is a collateral.
+
+    Returns:
+        List[Tuple[str, str]] -- The query params.
+    """
+    # Check based on the S3 object key
+    query_params = [("s3_object_key", get_from_event(event, "object_key"))]
+
+    # Check based on md5 if:
+    #  - the md5 is available and
+    #  - the CP is not VRT unless the item is a collateral
+    md5 = get_from_event(event, "md5")
+    if md5 and (cp_name.upper() not in ("VRT") or is_collateral(event)):
+        query_params.append(("md5", md5))
+
+    return query_params
+
+
+def is_collateral(event: dict) -> bool:
+    """Check if the event is a collateral."""
+    return get_from_event(event, "bucket") == "mam-collaterals"
+
+
 def handle_create_event(event: dict, properties, ctx: Context) -> bool:
     """Handler for s3 create events"""
-    # Check if item already in mediahaven based on key and md5
+
+    # Get cp_name for or_id
+    or_id = get_from_event(event, "tenant")
+    cp_name = get_cp_name(or_id, ctx)
+
+    # Check if item already in mediahaven
     mediahaven_service = MediahavenService(ctx)
-    query_params = [
-        ("s3_object_key", get_from_event(event, "object_key")),
-        ("md5", get_from_event(event, "md5")),
-    ]
+    query_params = query_params_item_ingested(event, cp_name)
 
     try:
         result = mediahaven_service.get_fragment(query_params)
@@ -227,13 +259,8 @@ def handle_create_event(event: dict, properties, ctx: Context) -> bool:
         )
         return
 
-    # Get cp_name for or_id
-    or_id = get_from_event(event, "tenant")
-    cp_name = get_cp_name(or_id, ctx)
-
     # Check if we are dealing with essence or collateral
-    bucket = get_from_event(event, "bucket")
-    if bucket == "mam-collaterals":
+    if is_collateral(event):
         # Handle collateral
         object_key = get_from_event(event, "object_key")
         try:
