@@ -211,7 +211,9 @@ def query_params_item_ingested(event: dict, cp_name: str) -> List[Tuple[str, str
     # Check based on the S3 object key
     query_params = [("s3_object_key", get_from_event(event, "object_key"))]
 
-    # Check based on md5 if the md5 is available and the CP is not VRT
+    # Check based on md5 if:
+    #  - the md5 is available and
+    #  - the CP is not VRT unless the item is a collateral
     md5 = get_from_event(event, "md5")
     if md5 and (cp_name.upper() not in ("VRT") or is_collateral(event)):
         query_params.append(("md5", md5))
