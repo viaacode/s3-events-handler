@@ -23,6 +23,7 @@ from viaa.configuration import ConfigParser
 from viaa.observability import logging
 
 # Local imports
+from meemoo.helpers import make_url
 
 # Get logger
 config = ConfigParser()
@@ -103,7 +104,8 @@ class OrganisationsService(Service):
         # Make sure the OR is uppercase. Organisation api needs it.
         or_id = or_id[:2].upper() + or_id[2:]
 
-        response = requests.get(f"{self.host}org/{or_id}")
+        url = make_url(self.host, 'org', or_id)
+        response = requests.get(url)
         organisation = response.json()["data"]
         return organisation
 

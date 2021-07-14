@@ -26,7 +26,8 @@ from meemoo.helpers import (
     normalize_or_id,
     is_event_valid,
     InvalidEventException,
-    get_destination_for_cp
+    get_destination_for_cp,
+    make_url
 )
 from tests.resources import (
     S3_MOCK_ESSENCE_EVENT,
@@ -169,6 +170,7 @@ def test_is_event_valid_extra_fields():
     # Assert
     assert event_valid is None
 
+
 @pytest.mark.parametrize(
     "environment, cp, file_type, expected_destination",
     [
@@ -188,5 +190,58 @@ def test_file_destination(environment, cp, file_type, expected_destination):
     # Assert
     assert destination == expected_destination
 
+
+def test_make_url_with_trailing_slash():
+    # Arrange
+    base_url = 'https://example-url/'
+    # Act
+    url = make_url(base_url, 'org', 'test-org-id')
+    # Assert
+    assert url == 'https://example-url/org/test-org-id'
+
+
+def test_make_url_multiple_trailing_slashes():
+    # Arrange
+    base_url = 'https://example-url////'
+    # Act
+    url = make_url(base_url, 'org', 'test-org-id')
+    # Assert
+    assert url == 'https://example-url/org/test-org-id'
+
+
+def test_make_url_missing_trailing_slash():
+    # Arrange
+    base_url = 'https://example-url'
+    # Act
+    url = make_url(base_url, 'org', 'test-org-id')
+    # Assert
+    assert url == 'https://example-url/org/test-org-id'
+
+
+def test_make_url_long_path():
+    # Arrange
+    base_url = 'https://example-url'
+    # Act
+    url = make_url(base_url, 'api', 'deeply', 'nested', 'test', 'path')
+    # Assert
+    assert url == 'https://example-url/api/deeply/nested/test/path'
+
+
+def test_make_url_none_base_url():
+    # Arrange
+    base_url = None
+    # Act and assert
+    with pytest.raises(TypeError) as excinfo:
+        make_url(base_url, 'org', 'test-org-id')
+    assert 'base_url is required' in str(excinfo.value)
+
+
+def test_make_url_no_path():
+    # Arrange
+    base_url = 'https://example-url'
+    # Act
+    url = make_url(base_url)
+    # Assert
+    assert url == 'https://example-url'
 
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4 smartindent
