@@ -111,7 +111,8 @@ class OrganisationsService(Service):
 class MediahavenService(Service):
     """ Abstraction for the mediahaven-api. """
 
-    def __init__(self, ctx):
+    def __init__(self, ctx, cp_name):
+        self.cp_name = cp_name
         self.name = "mediahaven-api"
         self.token_info = None
         super().__init__(ctx)
@@ -131,7 +132,7 @@ class MediahavenService(Service):
 
     def __get_token(self) -> str:
         """Gets an OAuth token that can be used in mediahaven requests to authenticate."""
-        user: str = self.config[self.name]["user"]
+        user: str = f"{self.config[self.name]['user-prefix']}{self.cp_name}"
         password: str = self.config[self.name]["passwd"]
         url: str = f"{self.host}oauth/access_token"
         payload = {"grant_type": "password"}
