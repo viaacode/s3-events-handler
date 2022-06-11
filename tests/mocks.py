@@ -19,15 +19,15 @@ def mock_ftp(monkeypatch):
 
 @pytest.fixture
 def mock_organisations_api(monkeypatch):
-    def mock_get_organisation(self, or_id):
+    def mock_get_mam_label(self, or_id):
         print(f"getting name for {or_id}")
         if or_id == "or_id_none":
-            return {"cp_name_mam": None}
-        return {"cp_name_mam": "UNITTEST"}
+            return None
+        return "UNITTEST"
 
     from meemoo.services import OrganisationsService
 
-    monkeypatch.setattr(OrganisationsService, "get_organisation", mock_get_organisation)
+    monkeypatch.setattr(OrganisationsService, "get_mam_label", mock_get_mam_label)
 
 
 @pytest.fixture
