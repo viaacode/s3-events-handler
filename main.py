@@ -297,9 +297,15 @@ def handle_create_event(event: dict, properties, ctx: Context) -> bool:
             )
 
         try:
-            item_pid = result["MediaDataList"][0]["Dynamic"]["PID"]
-            item_fragment_id = result["MediaDataList"][0]["Internal"]["FragmentId"]
-        except (IndexError, KeyError) as error:
+            # Find correct media_object in result
+            media_object = next(
+                item
+                for item in result["MediaDataList"]
+                if item["Administrative"]["Type"] in ["videofragment", "audiofragment"]
+            )
+            item_pid = media_object["Dynamic"]["PID"]
+            item_fragment_id = media_object["Internal"]["FragmentId"]
+        except (StopIteration, KeyError) as error:
             raise NackException(
                 f"Item not found in MediaHaven for dc_identifier_localid: {media_id}",
                 error=error,
