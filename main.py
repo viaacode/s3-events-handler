@@ -30,7 +30,7 @@ from meemoo.helpers import FTP, get_from_event, is_event_valid, InvalidEventExce
 from requests.exceptions import HTTPError, RequestException
 
 # Local imports
-from meemoo.services import MediahavenService, OrganisationsService, PIDService
+from meemoo.services import MediahavenService, OrganisationsService, PIDService, OrgApiError
 from viaa.configuration import ConfigParser
 from viaa.observability import logging
 
@@ -181,9 +181,10 @@ def get_cp_name(or_id: str, ctx: Context) -> str:
     else:
         try:
             org_service = OrganisationsService(ctx)
-            cp_name = org_service.get_organisation(or_id)["cp_name_mam"]
-            if cp_name is None:
-                raise NackException(f"No cp_name_mam found for or_id {or_id}")
+            try:
+                cp_name = org_service.get_mam_label(or_id)
+            except OrgApiError as e:
+                raise NackException(str(e))
             else:
                 cp_names[or_id] = cp_name
         except RequestException as error:
