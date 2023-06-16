@@ -522,7 +522,7 @@ def handle_remove_event(event: dict, properties, ctx: Context) -> bool:
                 fragment_collateral[0],
                 f'Deleted collateral with local_id: "{local_id}" linked to fragment with fragment_id: "{linked_fragment_id}". Essence was deleted via s3 delete-object.'
             )
-            time.sleep(0.2)  # Sleep to not hit rate limit
+            time.sleep(0.1)  # Sleep to not hit rate limit
 
     # Delete the essence
     delete_media_object(
