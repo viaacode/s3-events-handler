@@ -235,7 +235,7 @@ def handle_create_event(event: dict, properties, ctx: Context) -> bool:
     cp_name = get_cp_name(or_id, ctx)
 
     # Check if item already in mediahaven
-    mediahaven_service = MediahavenService(ctx)
+    mediahaven_service = MediahavenService(ctx, cp_name)
     query_params = query_params_item_ingested(event, cp_name)
 
     try:
@@ -431,7 +431,11 @@ def handle_remove_event(event: dict, properties, ctx: Context) -> bool:
     collaterals. These will be deleted one by one. Finally, delete the essence.
     """
 
-    mediahaven_service = MediahavenService(ctx)
+    # Get cp_name for or_id
+    or_id = get_from_event(event, "tenant")
+    cp_name = get_cp_name(or_id, ctx)
+
+    mediahaven_service = MediahavenService(ctx, cp_name)
 
     # Query MH with the s3_bucket en s3_object_key
     s3_bucket = get_from_event(event, "bucket")
@@ -518,7 +522,7 @@ def handle_remove_event(event: dict, properties, ctx: Context) -> bool:
                 fragment_collateral[0],
                 f'Deleted collateral with local_id: "{local_id}" linked to fragment with fragment_id: "{linked_fragment_id}". Essence was deleted via s3 delete-object.'
             )
-            time.sleep(0.2)  # Sleep to not hit rate limit
+            time.sleep(0.1)  # Sleep to not hit rate limit
 
     # Delete the essence
     delete_media_object(
