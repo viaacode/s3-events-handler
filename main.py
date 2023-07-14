@@ -29,7 +29,13 @@ from mediahaven.mediahaven import MediaHavenException
 from mediahaven.oauth2 import RequestTokenError, ROPCGrant
 from meemoo import Context
 from meemoo.events import Events
-from meemoo.helpers import FTP, get_from_event, is_event_valid, InvalidEventException, get_destination_for_cp
+from meemoo.helpers import (
+    FTP,
+    get_from_event,
+    is_event_valid,
+    InvalidEventException,
+    get_destination_for_cp,
+)
 from requests.exceptions import HTTPError, RequestException
 
 # Local imports
@@ -43,7 +49,7 @@ cp_names = {}
 
 
 class NackException(Exception):
-    """ Exception raised when there is a situation in which handling
+    """Exception raised when there is a situation in which handling
     of the event should be stopped.
     """
 
@@ -54,7 +60,7 @@ class NackException(Exception):
 
 
 def handle_nack_exception(nack_exception, channel, delivery_tag):
-    """ Log an error and send a nack to rabbit """
+    """Log an error and send a nack to rabbit"""
     log.error(nack_exception.message, **nack_exception.kwargs)
     if nack_exception.requeue:
         time.sleep(10)
@@ -167,7 +173,7 @@ def construct_fragment_update_sidecar(pid):
 
 
 def get_cp_name(or_id: str, ctx: Context) -> str:
-    """ Retrieves the CP MAM Name for a given OR ID.
+    """Retrieves the CP MAM Name for a given OR ID.
 
     The mapping between the OR ID and the CP MAM Name is cached.
     If the mapping is not found, The organisations API will be queried to retrieve
@@ -202,7 +208,7 @@ def get_cp_name(or_id: str, ctx: Context) -> str:
 
 
 def query_params_item_ingested(event: dict, cp_name: str) -> List[Tuple[str, str]]:
-    """ Construct the query parameters to check if an item is already in the MAM.
+    """Construct the query parameters to check if an item is already in the MAM.
 
     A check on S3 object key is always needed.
 
@@ -230,7 +236,9 @@ def is_collateral(event: dict) -> bool:
     return get_from_event(event, "bucket") == "mam-collaterals"
 
 
-def handle_create_event(event: dict, properties, ctx: Context, mediahaven_client: MediaHaven) -> bool:
+def handle_create_event(
+    event: dict, properties, ctx: Context, mediahaven_client: MediaHaven
+) -> bool:
     """Handler for s3 create events"""
 
     # Get cp_name for or_id
@@ -238,7 +246,6 @@ def handle_create_event(event: dict, properties, ctx: Context, mediahaven_client
     cp_name = get_cp_name(or_id, ctx)
 
     # Check if item already in mediahaven
-    mediahaven_service = MediahavenService(ctx, cp_name)
     query_params = query_params_item_ingested(event, cp_name)
     query = get_mediahaven_query(query_params)
     try:
@@ -257,7 +264,7 @@ def handle_create_event(event: dict, properties, ctx: Context, mediahaven_client
             error_message=error.response.text,
         )
 
-    if result.nr_of_results():
+    if result.nr_of_results:
         log.warning(
             "Item already archived", s3_object_key=get_from_event(event, "object_key")
         )
@@ -271,12 +278,11 @@ def handle_create_event(event: dict, properties, ctx: Context, mediahaven_client
             collateral_type = object_key.split("/")[0]
             media_id = object_key.split("/")[1]
         except IndexError as error:
-            # Object key is not properly formatted as <collateral_type>/<media_id>/ 
+            # Object key is not properly formatted as <collateral_type>/<media_id>/
             raise NackException(
                 f"Non-compliant object key for collateral: {object_key}",
                 error=error,
             )
-
 
         log.debug(f"Received a {collateral_type} for media id: {media_id}")
 
@@ -299,18 +305,20 @@ def handle_create_event(event: dict, properties, ctx: Context, mediahaven_client
                 error=error,
                 error_message=error.response.text,
             )
-        if not result.nr_of_results():
+        if not result.nr_of_results:
             raise NackException(
                 f"Item not found in MediaHaven for dc_identifier_localid: {media_id}"
             )
-        
-        item_pid = result.raw_response["Results"][0]["Dynamic"]["PID"]
-        item_fragment_id = result["Results"][0]["Internal"]["FragmentId"]
+
+        item_pid = result[0].Dynamic.PID
+        item_fragment_id = result[0].Internal.FragmentId
 
         log.debug(f"Found pid: {item_pid} for media id: {media_id}")
 
         pid = f"{item_pid}_{collateral_type}"
-        dest_path = construct_destination_path(ctx.config.app_cfg["environment"], cp_name, "collateral")
+        dest_path = construct_destination_path(
+            ctx.config.app_cfg["environment"], cp_name, "collateral"
+        )
         dest_filename = f"{pid}.xml"
 
         if collateral_type in ("openOt", "closedOt"):
@@ -318,11 +326,15 @@ def handle_create_event(event: dict, properties, ctx: Context, mediahaven_client
         else:
             object_use = "collateral"
 
-        sidecar_xml = construct_collateral_sidecar(event, item_pid, media_id, cp_name, object_use)
+        sidecar_xml = construct_collateral_sidecar(
+            event, item_pid, media_id, cp_name, object_use
+        )
 
         essence_update_sidecar = construct_fragment_update_sidecar(pid)
         try:
-            mediahaven_client.records.update(item_fragment_id, xml=essence_update_sidecar)
+            mediahaven_client.records.update(
+                item_fragment_id, xml=essence_update_sidecar
+            )
         except RequestException as error:
             raise NackException(
                 "Error connecting to MediaHaven, retrying....",
@@ -351,7 +363,9 @@ def handle_create_event(event: dict, properties, ctx: Context, mediahaven_client
 
         log.info(f"PID received: {pid}")
 
-        dest_path = construct_destination_path(ctx.config.app_cfg["environment"], cp_name, "essence")
+        dest_path = construct_destination_path(
+            ctx.config.app_cfg["environment"], cp_name, "essence"
+        )
         dest_filename = f"{pid}.xml"
 
         sidecar_xml = construct_essence_sidecar(event, pid, cp_name)
@@ -386,9 +400,7 @@ def handle_create_event(event: dict, properties, ctx: Context, mediahaven_client
     except Exception as error:
         # Potential destructive action has happened, allowed to requeue?
         raise NackException(
-            "Error transferring sidecar via FTP",
-            sidecar=sidecar_xml,
-            error=error
+            "Error transferring sidecar via FTP", sidecar=sidecar_xml, error=error
         )
 
     # Request file transfer
@@ -399,7 +411,9 @@ def handle_create_event(event: dict, properties, ctx: Context, mediahaven_client
     events.publish(json.dumps(param_dict), properties.correlation_id)
 
 
-def delete_media_object(mediahaven_client: MediaHaven, fragment_id: str, reason: str) -> bool:
+def delete_media_object(
+    mediahaven_client: MediaHaven, fragment_id: str, reason: str
+) -> bool:
     log.info(
         f"Deleting fragment for object with fragment id: {fragment_id}",
         fragment_id=fragment_id,
@@ -420,15 +434,19 @@ def delete_media_object(mediahaven_client: MediaHaven, fragment_id: str, reason:
             error_message=error.response.text,
         )
 
+
 def get_mediahaven_query(query_params: List[Tuple[str, str]], or_params=True) -> str:
     query = (
-            '+(' + ' '.join([f'{k_v[0]}:"{k_v[1]}"' for k_v in query_params]) + ')'
-            if or_params
-            else " ".join([f'+({k_v[0]}: "{k_v[1]}")' for k_v in query_params])
+        "+(" + " ".join([f'{k_v[0]}:"{k_v[1]}"' for k_v in query_params]) + ")"
+        if or_params
+        else " ".join([f'+({k_v[0]}: "{k_v[1]}")' for k_v in query_params])
     )
     return query
 
-def handle_remove_event(event: dict, properties, ctx: Context, mediahaven_client: MediaHaven) -> bool:
+
+def handle_remove_event(
+    event: dict, properties, ctx: Context, mediahaven_client: MediaHaven
+) -> bool:
     """Handler for s3 removed events
 
     First we query MH with the s3_object_key and s3_bucket
@@ -443,8 +461,6 @@ def handle_remove_event(event: dict, properties, ctx: Context, mediahaven_client
     # Get cp_name for or_id
     or_id = get_from_event(event, "tenant")
     cp_name = get_cp_name(or_id, ctx)
-
-    mediahaven_service = MediahavenService(ctx, cp_name)
 
     # Query MH with the s3_bucket en s3_object_key
     s3_bucket = get_from_event(event, "bucket")
@@ -470,17 +486,21 @@ def handle_remove_event(event: dict, properties, ctx: Context, mediahaven_client
             error_message=error.response.text,
         )
 
-    if not result.nr_of_results():
-        log.info(f"No media object found with s3 bucket: {s3_bucket} and object key: {s3_object_key}")
+    if not result.nr_of_results:
+        log.info(
+            f"No media object found with s3 bucket: {s3_bucket} and object key: {s3_object_key}"
+        )
         return
 
-    log.info(f"Removing media object with s3 bucket: {s3_bucket} and object key: {s3_object_key}")
+    log.info(
+        f"Removing media object with s3 bucket: {s3_bucket} and object key: {s3_object_key}"
+    )
 
     # Collect the Media ID (and Fragment ID) of the fragments. These will be used to remove the collaterals.
     fragments = {}
     for item in result.as_generator():
         if item.Internal.IsFragment:
-            fragments[item["Dynamic"]["dc_identifier_localid"]] = item.Internal.FragmentId
+            fragments[item.Dynamic.dc_identifier_localid] = item.Internal.FragmentId
 
     try:
         # Get the Fragment ID of the essence to delete
@@ -518,7 +538,7 @@ def handle_remove_event(event: dict, properties, ctx: Context, mediahaven_client
         # Collect the Fragment IDs of the collaterals. The Media ID is used in the delete reason.
         fragments_collateral = [
             (item.Internal.FragmentId, item.Dynamic.dc_identifier_localid)
-            for item in result.as_generator()
+            for item in response.as_generator()
             if not item.Internal.IsFragment
         ]
 
@@ -530,7 +550,7 @@ def handle_remove_event(event: dict, properties, ctx: Context, mediahaven_client
             result = delete_media_object(
                 mediahaven_client,
                 fragment_collateral[0],
-                f'Deleted collateral with local_id: "{local_id}" linked to fragment with fragment_id: "{linked_fragment_id}". Essence was deleted via s3 delete-object.'
+                f'Deleted collateral with local_id: "{local_id}" linked to fragment with fragment_id: "{linked_fragment_id}". Essence was deleted via s3 delete-object.',
             )
             time.sleep(0.1)  # Sleep to not hit rate limit
 
@@ -538,12 +558,12 @@ def handle_remove_event(event: dict, properties, ctx: Context, mediahaven_client
     delete_media_object(
         mediahaven_client,
         fragment_id_essence,
-        f's3 delete-object for bucket: "{s3_bucket}" and key: "{s3_object_key}"'
+        f's3 delete-object for bucket: "{s3_bucket}" and key: "{s3_object_key}"',
     )
 
 
 def calculate_handler(event: dict):
-    """ Factory method to return correct handler """
+    """Factory method to return correct handler"""
     event_name = get_from_event(event, "event_name")
     base_type = event_name.split(":")[0]
     if base_type == "ObjectCreated":

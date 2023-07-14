@@ -3,14 +3,15 @@ from unittest.mock import MagicMock
 
 import pytest
 from main import (
-        callback,
-        construct_collateral_sidecar,
-        construct_essence_sidecar,
-        construct_fragment_update_sidecar,
-        cp_names,
-        get_cp_name,
-        NackException,
-        query_params_item_ingested,
+    callback,
+    construct_collateral_sidecar,
+    construct_essence_sidecar,
+    construct_fragment_update_sidecar,
+    cp_names,
+    get_cp_name,
+    handle_create_event,
+    NackException,
+    query_params_item_ingested,
 )
 from .mocks import mock_events, mock_ftp, mock_organisations_api, mock_mediahaven_api
 from .resources import (
@@ -23,6 +24,8 @@ from .resources import (
     MOCK_MEDIAHAVEN_EXTERNAL_METADATA_COLLATERAL,
     MOCK_MEDIAHAVEN_FRAGMENT_UPDATE,
 )
+from mediahaven import MediaHaven
+from mediahaven.oauth2 import ROPCGrant
 
 
 class Expando(object):
@@ -44,37 +47,46 @@ def context():
         S3_MOCK_ESSENCE_EVENT,
         S3_MOCK_COLLATERAL_EVENT,
         S3_MOCK_REMOVED_EVENT,
-    ]
+    ],
 )
 def test_callback(
-    body,
-    context,
-    mock_ftp,
-    mock_organisations_api,
-    mock_events,
-    mock_mediahaven_api
+    body, context, mock_ftp, mock_organisations_api, mock_events, mock_mediahaven_api
 ):
     ex = Expando()
     ex.correlation_id = "a1b2c3"
     channel_mock = MagicMock()
-    callback(channel_mock, MagicMock(), ex, body, context)
+    callback(
+        channel_mock,
+        MagicMock(),
+        ex,
+        body,
+        context,
+        MediaHaven("", ROPCGrant("", "", "")),
+    )
     assert channel_mock.basic_ack.call_count == 1
     assert not channel_mock.basic_nack.call_count
 
 
-@pytest.mark.parametrize("body", [S3_MOCK_UNKNOWN_EVENT, ])
+@pytest.mark.parametrize(
+    "body",
+    [
+        S3_MOCK_UNKNOWN_EVENT,
+    ],
+)
 def test_callback_unsuccessful(
-    body,
-    context,
-    mock_ftp,
-    mock_organisations_api,
-    mock_events,
-    mock_mediahaven_api
+    body, context, mock_ftp, mock_organisations_api, mock_events, mock_mediahaven_api
 ):
     ex = Expando()
     ex.correlation_id = "a1b2c3"
     channel_mock = MagicMock()
-    callback(channel_mock, MagicMock(), ex, body, context)
+    callback(
+        channel_mock,
+        MagicMock(),
+        ex,
+        body,
+        context,
+        MediaHaven("", ROPCGrant("", "", "")),
+    )
     assert channel_mock.basic_nack.call_count == 1
     assert not channel_mock.basic_ack.call_count
 
@@ -139,6 +151,7 @@ def test_query_params_item_ingested():
         ),
         ("md5", "1234abcd1234abcd1234abcd1234abcd"),
     ]
+
 
 @pytest.mark.parametrize("cp", ["cp", "VRT"])
 def test_query_params_item_ingested_collateral(cp):
