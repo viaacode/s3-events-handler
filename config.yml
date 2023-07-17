@@ -27,5 +27,6 @@ app:
         passwd: !ENV ${MEDIAHAVEN_API_PASSWD}
         client_id: !ENV ${MEDIAHAVEN_API_CLIENT_ID}
         client_secret: !ENV ${MEDIAHAVEN_API_CLIENT_SECRET}
+        username: !ENV ${MEDIAHAVEN_API_USERNAME}
     organisations-api:
         host: !ENV ${ORGANISATIONS_API_HOST}
