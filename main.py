@@ -595,7 +595,7 @@ def callback(ch, method, properties, body, ctx, mediahaven_client):
 def main(ctx: Context):
     events = Events(ctx.config.app_cfg["rabbitmq"]["incoming"], ctx)
     channel = events.get_channel()
-    mediahaven_config = ctx.config.config["environment"]["mediahaven"]
+    mediahaven_config = ctx.config.app_cfg["mediahaven-api"]
     client_id = mediahaven_config["client_id"]
     client_secret = mediahaven_config["client_secret"]
     user = mediahaven_config["username"]
