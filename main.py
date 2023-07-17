@@ -25,7 +25,6 @@ from typing import List, Tuple
 # 3d party imports
 from lxml import etree
 from mediahaven import MediaHaven
-from mediahaven.mediahaven import MediaHavenException
 from mediahaven.oauth2 import RequestTokenError, ROPCGrant
 from meemoo import Context
 from meemoo.events import Events
@@ -600,7 +599,7 @@ def main(ctx: Context):
     client_id = mediahaven_config["client_id"]
     client_secret = mediahaven_config["client_secret"]
     user = mediahaven_config["username"]
-    password = mediahaven_config["password"]
+    password = mediahaven_config["passwd"]
     url = mediahaven_config["host"]
     grant = ROPCGrant(url, client_id, client_secret)
     try:
