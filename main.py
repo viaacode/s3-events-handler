@@ -26,6 +26,7 @@ from typing import List, Tuple
 from lxml import etree
 from mediahaven import MediaHaven
 from mediahaven.oauth2 import RequestTokenError, ROPCGrant
+from mediahaven.mediahaven import ContentType
 from meemoo import Context
 from meemoo.events import Events
 from meemoo.helpers import (
@@ -332,7 +333,10 @@ def handle_create_event(
         essence_update_sidecar = construct_fragment_update_sidecar(pid)
         try:
             mediahaven_client.records.update(
-                item_fragment_id, xml=essence_update_sidecar
+                item_fragment_id,
+                metadata=essence_update_sidecar,
+                metadata_content_type=ContentType.XML.value,
+                reason=f"[s3-events-handler] Voeg relatie van {object_use} toe",
             )
         except RequestException as error:
             raise NackException(
