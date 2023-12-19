@@ -98,11 +98,13 @@ def construct_essence_sidecar(event, pid, cp_name):
     etree.SubElement(mdprops, "s3_domain").text = get_from_event(event, "domain")
     etree.SubElement(mdprops, "s3_bucket").text = get_from_event(event, "bucket")
     etree.SubElement(mdprops, "s3_object_key").text = s3_object_key
-    etree.SubElement(mdprops, "dc_source").text = s3_object_key
     etree.SubElement(mdprops, "s3_object_owner").text = get_from_event(event, "user")
     etree.SubElement(mdprops, "object_level").text = "file"
     etree.SubElement(mdprops, "object_use").text = "archive_master"
     etree.SubElement(mdprops, "ie_type").text = "n/a"
+    localids = etree.SubElement(mdprops, "dc_identifier_localids")
+    etree.SubElement(localids, "Bestandsnaam").text = s3_object_key
+    
 
     # Only add md5 if valid and available from the event.
     if re.match("^[a-fA-F0-9]{32}$", get_from_event(event, "md5")):
@@ -133,12 +135,13 @@ def construct_collateral_sidecar(event, pid, media_id, cp_name, object_use):
     etree.SubElement(mdprops, "s3_domain").text = get_from_event(event, "domain")
     etree.SubElement(mdprops, "s3_bucket").text = get_from_event(event, "bucket")
     etree.SubElement(mdprops, "s3_object_key").text = s3_object_key
-    etree.SubElement(mdprops, "dc_source").text = s3_object_key
     etree.SubElement(mdprops, "s3_object_owner").text = get_from_event(event, "user")
     etree.SubElement(mdprops, "dc_identifier_localid").text = media_id
     etree.SubElement(mdprops, "object_level").text = "file"
     etree.SubElement(mdprops, "object_use").text = object_use
     etree.SubElement(mdprops, "ie_type").text = "n/a"
+    localids = etree.SubElement(mdprops, "dc_identifier_localids")
+    etree.SubElement(localids, "Bestandsnaam").text = s3_object_key
 
     # Only add md5 if valid and available from the event.
     if re.match("^[a-fA-F0-9]{32}$", get_from_event(event, "md5")):
