@@ -309,11 +309,13 @@ MOCK_MEDIAHAVEN_EXTERNAL_METADATA = """<?xml version='1.0' encoding='UTF-8'?>
     <s3_domain>s3</s3_domain>
     <s3_bucket>MAM_HighresVideo</s3_bucket>
     <s3_object_key>191213-VAN___statement_De_ideale_wereld___Don_12_December_2019-1983-d5be522e-3609-417a-a1f4-5922854620c8.MXF</s3_object_key>
-    <dc_source>191213-VAN___statement_De_ideale_wereld___Don_12_December_2019-1983-d5be522e-3609-417a-a1f4-5922854620c8.MXF</dc_source>
     <s3_object_owner>Object Owner CN+OR-id</s3_object_owner>
     <object_level>file</object_level>
     <object_use>archive_master</object_use>
     <ie_type>n/a</ie_type>
+    <dc_identifier_localids>
+      <Bestandsnaam>191213-VAN___statement_De_ideale_wereld___Don_12_December_2019-1983-d5be522e-3609-417a-a1f4-5922854620c8.MXF</Bestandsnaam>
+    </dc_identifier_localids>
     <md5>1234abcd1234abcd1234abcd1234abcd</md5>
   </MDProperties>
 </MediaHAVEN_external_metadata>
@@ -334,12 +336,14 @@ MOCK_MEDIAHAVEN_EXTERNAL_METADATA_COLLATERAL = """<?xml version='1.0' encoding='
     <s3_domain>s3</s3_domain>
     <s3_bucket>mam-collaterals</s3_bucket>
     <s3_object_key>TYPE/MEDIAID/blabla.xif</s3_object_key>
-    <dc_source>TYPE/MEDIAID/blabla.xif</dc_source>
     <s3_object_owner>Object Owner CN+OR-id</s3_object_owner>
     <dc_identifier_localid>media_id</dc_identifier_localid>
     <object_level>file</object_level>
     <object_use>metadata</object_use>
     <ie_type>n/a</ie_type>
+    <dc_identifier_localids>
+      <Bestandsnaam>TYPE/MEDIAID/blabla.xif</Bestandsnaam>
+    </dc_identifier_localids>
     <md5>1234abcd1234abcd1234abcd1234abcd</md5>
     <dc_relations>
       <is_verwant_aan>test_pid</is_verwant_aan>
