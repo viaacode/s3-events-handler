@@ -1,16 +1,17 @@
 import json
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from main import (
-        callback,
-        construct_collateral_sidecar,
-        construct_essence_sidecar,
-        construct_fragment_update_sidecar,
-        cp_names,
-        get_cp_name,
-        NackException,
-        query_params_item_ingested,
+    callback,
+    construct_collateral_sidecar,
+    construct_essence_sidecar,
+    construct_fragment_update_sidecar,
+    cp_names,
+    get_cp_name,
+    handle_create_event,
+    NackException,
+    query_params_item_ingested,
 )
 from .mocks import mock_events, mock_ftp, mock_organisations_api, mock_mediahaven_api
 from .resources import (
@@ -23,6 +24,9 @@ from .resources import (
     MOCK_MEDIAHAVEN_EXTERNAL_METADATA_COLLATERAL,
     MOCK_MEDIAHAVEN_FRAGMENT_UPDATE,
 )
+from mediahaven import MediaHaven
+from mediahaven.oauth2 import ROPCGrant
+from mediahaven.mocks.base_resource import MediaHavenPageObjectJSONMock
 
 
 class Expando(object):
@@ -44,37 +48,131 @@ def context():
         S3_MOCK_ESSENCE_EVENT,
         S3_MOCK_COLLATERAL_EVENT,
         S3_MOCK_REMOVED_EVENT,
-    ]
+    ],
 )
 def test_callback(
-    body,
-    context,
-    mock_ftp,
-    mock_organisations_api,
-    mock_events,
-    mock_mediahaven_api
+    body, context, mock_ftp, mock_organisations_api, mock_events, mock_mediahaven_api
 ):
     ex = Expando()
     ex.correlation_id = "a1b2c3"
     channel_mock = MagicMock()
-    callback(channel_mock, MagicMock(), ex, body, context)
+    callback(
+        channel_mock,
+        MagicMock(),
+        ex,
+        body,
+        context,
+        MediaHaven("", ROPCGrant("", "", "")),
+    )
     assert channel_mock.basic_ack.call_count == 1
     assert not channel_mock.basic_nack.call_count
 
 
-@pytest.mark.parametrize("body", [S3_MOCK_UNKNOWN_EVENT, ])
-def test_callback_unsuccessful(
-    body,
+@patch("mediahaven.MediaHaven")
+@patch("mediahaven.oauth2.ROPCGrant")
+@patch("main.PIDService")
+@patch("main.construct_essence_sidecar")
+@patch("main.FTP")
+@patch("main.OrganisationsService")
+@patch("main.Events")
+@patch("main.construct_collateral_sidecar")
+def test_handle_create_event_essence(
+    construct_collateral_sidecar_mock,
+    events_mock,
+    org_service_mock,
+    ftp_mock,
+    construct_essence_sidecar_mock,
+    pid_service_mock,
+    grant_mock,
+    mediahaven_mock,
     context,
-    mock_ftp,
-    mock_organisations_api,
-    mock_events,
-    mock_mediahaven_api
+):
+    ex = Expando()
+    ex.correlation_id = "a1b2c3"
+
+    mediahaven_mock.records.search.return_value = MediaHavenPageObjectJSONMock(
+        [], nr_of_results=0
+    )
+    pid_service_mock().get_pid.return_value = "12345678"
+    handle_create_event(json.loads(S3_MOCK_ESSENCE_EVENT), ex, context, mediahaven_mock)
+
+    assert construct_essence_sidecar_mock.call_count == 1
+    assert ftp_mock().put.call_count == 1
+    assert events_mock().publish.call_count == 1
+    assert pid_service_mock().get_pid.call_count == 1
+    assert pid_service_mock().get_pid.return_value == "12345678"
+    assert construct_collateral_sidecar_mock.call_count == 0
+
+
+@patch("mediahaven.MediaHaven")
+@patch("mediahaven.oauth2.ROPCGrant")
+@patch("main.PIDService")
+@patch("main.construct_collateral_sidecar")
+@patch("main.FTP")
+@patch("main.OrganisationsService")
+@patch("main.Events")
+@patch("main.construct_fragment_update_sidecar")
+@patch("main.construct_essence_sidecar")
+def test_handle_create_event_collateral(
+    construct_essence_sidecar_mock,
+    construct_fragment_update_sidecar_mock,
+    events_mock,
+    org_service_mock,
+    ftp_mock,
+    construct_collateral_sidecar_mock,
+    pid_service_mock,
+    grant_mock,
+    mediahaven_mock,
+    context,
+):
+    ex = Expando()
+    ex.correlation_id = "a1b2c3"
+
+    # Use side effect in order to mock
+    mediahaven_mock.records.search.side_effect = [
+        MediaHavenPageObjectJSONMock([], nr_of_results=0),
+        MediaHavenPageObjectJSONMock(
+            [
+                {"Internal": {"FragmentId": 1}, "Dynamic": {"PID": "pid1"}},
+                {"Internal": {"FragmentId": 2}, "Dynamic": {"PID": "pid2"}},
+            ],
+            nr_of_results=2,
+        ),
+    ]
+
+    pid_service_mock().get_pid.return_value = "12345678"
+    handle_create_event(
+        json.loads(S3_MOCK_COLLATERAL_EVENT), ex, context, mediahaven_mock
+    )
+
+    assert mediahaven_mock.records.search.call_count == 2
+    assert ftp_mock().put.call_count == 1
+    assert events_mock().publish.call_count == 1
+    assert pid_service_mock().get_pid.call_count == 0
+    assert construct_fragment_update_sidecar_mock.call_count == 1
+    assert construct_essence_sidecar_mock.call_count == 0
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        S3_MOCK_UNKNOWN_EVENT,
+    ],
+)
+def test_callback_unsuccessful(
+    body, context, mock_ftp, mock_organisations_api, mock_events, mock_mediahaven_api
 ):
     ex = Expando()
     ex.correlation_id = "a1b2c3"
     channel_mock = MagicMock()
-    callback(channel_mock, MagicMock(), ex, body, context)
+    callback(
+        channel_mock,
+        MagicMock(),
+        ex,
+        body,
+        context,
+        MediaHaven("", ROPCGrant("", "", "")),
+    )
     assert channel_mock.basic_nack.call_count == 1
     assert not channel_mock.basic_ack.call_count
 
@@ -139,6 +237,7 @@ def test_query_params_item_ingested():
         ),
         ("md5", "1234abcd1234abcd1234abcd1234abcd"),
     ]
+
 
 @pytest.mark.parametrize("cp", ["cp", "VRT"])
 def test_query_params_item_ingested_collateral(cp):
