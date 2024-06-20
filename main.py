@@ -113,7 +113,6 @@ def construct_essence_sidecar(event, pid, cp_name):
     etree.SubElement(mdprops, "ie_type").text = "n/a"
     localids = etree.SubElement(mdprops, "dc_identifier_localids")
     etree.SubElement(localids, "Bestandsnaam").text = s3_object_key
-    
 
     # Only add md5 if valid and available from the event.
     if re.match("^[a-fA-F0-9]{32}$", get_from_event(event, "md5")):
@@ -189,24 +188,27 @@ def get_cp_name(or_id: str, ctx: Context) -> str:
         str -- The CP MAM Name
     """
     if or_id in cp_names:
-        cp_name = cp_names[or_id]
-    else:
-        try:
-            org_service = OrganisationsService(ctx)
-            try:
-                cp_name = org_service.get_mam_label(or_id)
-            except OrgApiError as e:
-                raise NackException(str(e))
-            else:
-                cp_names[or_id] = cp_name
-        except RequestException as error:
-            raise NackException(
-                "Error connecting to Organisation API, retrying....",
-                error=error,
-                requeue=True,
-            )
-        except KeyError:
-            raise NackException(f"Organisation not found with or_id: {or_id}")
+        return cp_names[or_id]
+
+    org_service = OrganisationsService(ctx)
+
+    try:
+        cp_name = org_service.get_mam_label(or_id)
+    except OrgApiError as e:
+        raise NackException(str(e))
+    except RequestException as error:
+        raise NackException(
+            "Error connecting to Organisation API, retrying....",
+            error=error,
+            requeue=True,
+        )
+
+    if cp_name is None:
+        raise NackException(
+            f"The organisation exists but there is no mam label for or-id: {or_id}",
+        )
+
+    cp_names[or_id] = cp_name
     return cp_name
 
 
