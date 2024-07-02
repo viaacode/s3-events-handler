@@ -176,9 +176,9 @@ def construct_fragment_update_sidecar(pid):
 
 
 def get_cp_name(or_id: str, ctx: Context) -> str:
-    """Retrieves the CP MAM Name for a given OR ID.
+    """Retrieves the CP Name for a given OR ID.
 
-    The mapping between the OR ID and the CP MAM Name is cached.
+    The mapping between the OR ID and the CP Name is cached.
     If the mapping is not found, The organisations API will be queried to retrieve
     that information. That information will be cached in a dictionary.
 
@@ -186,7 +186,7 @@ def get_cp_name(or_id: str, ctx: Context) -> str:
         or_id {str} -- The OR ID
         ctx {Context} -- The context
     Returns:
-        str -- The CP MAM Name
+        str -- The CP Name
     """
     if or_id in cp_names:
         cp_name = cp_names[or_id]
@@ -194,7 +194,7 @@ def get_cp_name(or_id: str, ctx: Context) -> str:
         try:
             org_service = OrganisationsService(ctx)
             try:
-                cp_name = org_service.get_mam_label(or_id)
+                cp_name = org_service.get_org_label(or_id)
             except OrgApiError as e:
                 raise NackException(str(e))
             else:

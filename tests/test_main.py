@@ -220,7 +220,7 @@ def test_get_cp_name(context, mock_organisations_api):
 def test_get_cp_name_cached(context, mock_organisations_api):
     or_id = "or_id_cached"
     assert or_id not in cp_names
-    cp_name = "CP MAM NAME"
+    cp_name = "CP ORG NAME"
     cp_names["or_id"] = cp_name
     name = get_cp_name("or_id", context)
     assert name != "UNITTEST"

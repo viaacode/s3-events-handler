@@ -104,7 +104,7 @@ class OrganisationsService(Service):
         super().__init__(ctx)
 
     def _construct_query(self, or_id: str):
-        """Construct the Graphql query to retrieve the CP name defined in the MAM
+        """Construct the Graphql query to retrieve the CP name
         Args:
             or_id: The cp-id for which to retrieve the CP name.
         Returns:
@@ -112,12 +112,12 @@ class OrganisationsService(Service):
         """
         query = f"""{{
             organizations(id:"{or_id}") {{
-                mam_label
+                label
             }}
         }}"""
         return query
 
-    def get_mam_label(self, or_id):
+    def get_org_label(self, or_id):
         # Make sure the OR is uppercase. Organisation api needs it.
         or_id = or_id[:2].upper() + or_id[2:]
 
@@ -128,10 +128,10 @@ class OrganisationsService(Service):
             json=data_payload,
         )
         try:
-            mam_label = response.json()["data"]["organizations"][0]["mam_label"]
+            org_label = response.json()["data"]["organizations"][0]["label"]
         except (KeyError, IndexError) as e:
-            raise OrgApiError(f"Could not fetch the mam label for OR ID '{or_id}': {e}")
-        return mam_label
+            raise OrgApiError(f"Could not fetch the label for OR ID '{or_id}': {e}")
+        return org_label
 
 class MediahavenService(Service):
     """ Abstraction for the mediahaven-api. """
