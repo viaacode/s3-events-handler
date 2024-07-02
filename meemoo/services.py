@@ -130,7 +130,7 @@ class OrganisationsService(Service):
         try:
             org_label = response.json()["data"]["organizations"][0]["label"]
         except (KeyError, IndexError) as e:
-            raise OrgApiError(f"Could not fetch the mam label for OR ID '{or_id}': {e}")
+            raise OrgApiError(f"Could not fetch the label for OR ID '{or_id}': {e}")
         return org_label
 
 class MediahavenService(Service):
