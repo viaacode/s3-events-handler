@@ -73,12 +73,16 @@ def construct_destination_path(environment, cp_name, file_type):
 
 
 def construct_fts_params_dict(event, pid, file_extension, dest_path, ctx):
-    """"""
+    """Construct the file transfer service parameters dictionary?"""
+
     return {
         "source": {
             "domain": {"name": get_from_event(event, "domain")},
             "bucket": {"name": get_from_event(event, "bucket")},
-            "object": {"key": get_from_event(event, "object_key")},
+            "object": {
+                "key": get_from_event(event, "object_key"),
+                "size_bytes": get_from_event(event, "size"),
+            },
         },
         "destination": {
             "path": f"/mnt/STORAGE/INGEST/SIDECAR{dest_path}/{pid}{file_extension}",
