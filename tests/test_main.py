@@ -49,6 +49,11 @@ def context():
         S3_MOCK_COLLATERAL_EVENT,
         S3_MOCK_REMOVED_EVENT,
     ],
+    ids=[
+        "s3 essence event",
+        "s3 collateral event",
+        "s3 removed event"
+    ],
 )
 def test_callback(
     body, context, mock_ftp, mock_organisations_api, mock_events, mock_mediahaven_api
@@ -158,6 +163,9 @@ def test_handle_create_event_collateral(
     [
         S3_MOCK_UNKNOWN_EVENT,
     ],
+    ids=[
+        "unknown event"
+    ],
 )
 def test_callback_unsuccessful(
     body, context, mock_ftp, mock_organisations_api, mock_events, mock_mediahaven_api
@@ -259,6 +267,11 @@ def test_query_params_item_ingested_collateral(cp):
         ("cp", S3_MOCK_ESSENCE_EVENT_WITHOUT_MD5),
         ("VRT", S3_MOCK_ESSENCE_EVENT),
         ("VRT", S3_MOCK_ESSENCE_EVENT_WITHOUT_MD5),
+    ],
+    ids=[
+        "cp event without md5",
+        "vrt event",
+        "vrt event without md5"
     ],
 )
 def test_query_params_item_ingested_no_md5(cp, body):
