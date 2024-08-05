@@ -30,8 +30,8 @@ log = logging.get_logger(__name__, config=config)
 
 # Constants
 BASE_DOMAIN = "viaa.be"
-S3_FIELDS = ["bucket", "object_key", "domain", "tenant", "user", "md5", "event_name"] 
-REQUIRED_S3_FIELDS = ["bucket", "object_key", "domain", "tenant", "user", "event_name"] 
+S3_FIELDS = ["bucket", "object_key", "domain", "tenant", "user", "md5", "event_name", "size"]
+REQUIRED_S3_FIELDS = ["bucket", "object_key", "domain", "tenant", "user", "event_name"]
 
 class InvalidEventException(Exception):
     """ Exception raised when not all required fields are present
@@ -89,6 +89,8 @@ def get_from_event(event, name):
         return try_to_find_md5(record["s3"]["object"]["metadata"])
     elif name == "event_name":
         return record["eventName"]
+    elif name == "size":
+        return record["s3"]["object"]["size"]
 
 def normalize_or_id(or_id):
     """Return a "normalized" version of the `OR-id`. This means:
