@@ -15,6 +15,8 @@ from main import (
 )
 from .mocks import mock_events, mock_ftp, mock_organisations_api, mock_mediahaven_api
 from .resources import (
+    MOCK_MEDIAHAVEN_EXTERNAL_CLOSED_OT_COLLATERAL,
+    MOCK_MEDIAHAVEN_EXTERNAL_OPEN_OT_COLLATERAL,
     S3_MOCK_ESSENCE_EVENT,
     S3_MOCK_COLLATERAL_EVENT,
     S3_MOCK_REMOVED_EVENT,
@@ -194,11 +196,37 @@ def test_construct_collateral_sidecar():
 
     # ACT
     sidecar_xml = construct_collateral_sidecar(
-        event, "test_pid", "media_id", "VRT", "metadata"
+        event, "test_pid", "media_id", "VRT", "metadata", "collateral_type"
     )
 
     # ASSERT
     assert sidecar_xml.decode("utf-8") == MOCK_MEDIAHAVEN_EXTERNAL_METADATA_COLLATERAL
+
+
+def test_construct_collateral_sidecar_open_ot_title():
+    # ARRANGE
+    event = json.loads(S3_MOCK_COLLATERAL_EVENT)
+
+    # ACT
+    sidecar_xml = construct_collateral_sidecar(
+        event, "test_pid", "media_id", "VRT", "subtitle", "openOt"
+    )
+
+    # ASSERT
+    assert sidecar_xml.decode("utf-8") == MOCK_MEDIAHAVEN_EXTERNAL_OPEN_OT_COLLATERAL
+
+
+def test_construct_collateral_sidecar_closed_ot_title():
+    # ARRANGE
+    event = json.loads(S3_MOCK_COLLATERAL_EVENT)
+
+    # ACT
+    sidecar_xml = construct_collateral_sidecar(
+        event, "test_pid", "media_id", "VRT", "subtitle", "closedOt"
+    )
+
+    # ASSERT
+    assert sidecar_xml.decode("utf-8") == MOCK_MEDIAHAVEN_EXTERNAL_CLOSED_OT_COLLATERAL
 
 
 def test_construct_fragment_update_sidecar():
