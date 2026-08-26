@@ -10,16 +10,17 @@
 
 # System imports
 import os
-from io import BytesIO
-from ftplib import FTP as BuiltinFTP
-from urllib.parse import urlparse
 import re
+from ftplib import FTP as BuiltinFTP
+from io import BytesIO
+from urllib.parse import urlparse
+
+import yaml
+from lxml import etree
 
 # Third-party imports
 from viaa.configuration import ConfigParser
 from viaa.observability import logging
-from lxml import etree
-import yaml
 
 # Local imports
 
@@ -30,16 +31,34 @@ log = logging.get_logger(__name__, config=config)
 
 # Constants
 BASE_DOMAIN = "viaa.be"
-S3_FIELDS = ["bucket", "object_key", "domain", "tenant", "user", "md5", "event_name"] 
-REQUIRED_S3_FIELDS = ["bucket", "object_key", "domain", "tenant", "user", "event_name"] 
+S3_FIELDS = [
+    "bucket",
+    "object_key",
+    "domain",
+    "tenant",
+    "user",
+    "md5",
+    "event_name",
+    "size",
+]
+REQUIRED_S3_FIELDS = [
+    "bucket",
+    "object_key",
+    "domain",
+    "tenant",
+    "user",
+    "event_name",
+    "size",
+]
+
 
 class InvalidEventException(Exception):
-    """ Exception raised when not all required fields are present
-    """
+    """Exception raised when not all required fields are present"""
 
     def __init__(self, message, **kwargs):
         self.message = message
         self.kwargs = kwargs
+
 
 def get_destination_for_cp(environment: str, cp_name: str, file_type: str):
     # Default location
@@ -47,13 +66,16 @@ def get_destination_for_cp(environment: str, cp_name: str, file_type: str):
 
     with open(os.getcwd() + "/destination_config.yml", "r") as ymlfile:
         destinations = yaml.load(ymlfile, Loader=yaml.FullLoader)
-    
+
     try:
         destination = destinations[environment][cp_name][file_type]
     except KeyError as ke:
-        log.info(f"No destination configured for content partner '{cp_name}' with type '{file_type}' in '{environment}'")
+        log.info(
+            f"No destination configured for content partner '{cp_name}' with type '{file_type}' in '{environment}'"
+        )
 
     return destination
+
 
 def try_to_find_md5(object_metadata):
     """Simple convenience function that allows to be able to try different
@@ -89,6 +111,9 @@ def get_from_event(event, name):
         return try_to_find_md5(record["s3"]["object"]["metadata"])
     elif name == "event_name":
         return record["eventName"]
+    elif name == "size":
+        return record["s3"]["object"]["size"]
+
 
 def normalize_or_id(or_id):
     """Return a "normalized" version of the `OR-id`. This means:
@@ -101,20 +126,27 @@ def normalize_or_id(or_id):
     """
     NOID_LENGTH = 7
     try:
-        prefix, noid = or_id.split('-')
+        prefix, noid = or_id.split("-")
     except ValueError as e:
         raise ValueError(f'Could not split "{or_id}" by "-".')
     if len(noid) != NOID_LENGTH:
-        raise ValueError(f'Invalid noid length for "{or_id}": != {NOID_LENGTH}: found {len(noid)}')
-    return '-'.join((prefix.upper(), noid.lower()))
+        raise ValueError(
+            f'Invalid noid length for "{or_id}": != {NOID_LENGTH}: found {len(noid)}'
+        )
+    return "-".join((prefix.upper(), noid.lower()))
+
 
 def is_event_valid(event):
     try:
-        fields_present_in_event = [field for field in S3_FIELDS if get_from_event(event, field)]
-        
+        fields_present_in_event = [
+            field for field in S3_FIELDS if get_from_event(event, field)
+        ]
+
         assert set(REQUIRED_S3_FIELDS).issubset(set(fields_present_in_event))
     except (AssertionError, KeyError, ValueError, InvalidEventException) as error:
-        raise InvalidEventException("Not all fields are present in the event.", event=event, error=error)
+        raise InvalidEventException(
+            "Not all fields are present in the event.", event=event, error=error
+        )
 
 
 class SidecarBuilder(object):

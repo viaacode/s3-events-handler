@@ -66,10 +66,20 @@ def test_get_from_event():
     event_dict = json.loads(S3_MOCK_ESSENCE_EVENT)
     bucket = get_from_event(event_dict, "bucket")
     assert bucket == "MAM_HighresVideo"
-    event_name = get_from_event(event_dict, "event_name")
-    assert event_name == "ObjectCreated:Put"
+    domain = get_from_event(event_dict, "domain")
+    assert domain == "s3"
+    object_key = get_from_event(event_dict, "object_key")
+    assert object_key == "191213-VAN___statement_De_ideale_wereld___Don_12_December_2019-1983-d5be522e-3609-417a-a1f4-5922854620c8.MXF"
     or_id = get_from_event(event_dict, "tenant")
     assert or_id == "OR-rf5kf25"
+    user = get_from_event(event_dict, "user")
+    assert user == "Object Owner CN+OR-id"
+    md5 = get_from_event(event_dict, "md5")
+    assert md5 == "1234abcd1234abcd1234abcd1234abcd"
+    event_name = get_from_event(event_dict, "event_name")
+    assert event_name == "ObjectCreated:Put"
+    size_bytes = get_from_event(event_dict, "size")
+    assert size_bytes == 4248725
 
 
 def test_normalize_or_id_valid():
