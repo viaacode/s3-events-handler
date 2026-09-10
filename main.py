@@ -287,18 +287,18 @@ def handle_create_event(
     query = get_mediahaven_query(query_params)
     try:
         result = mediahaven_client.records.search(q=query)
-    except RequestException as error:
-        raise NackException(
-            "Error connecting to MediaHaven, retrying....",
-            error=error,
-            requeue=True,
-        )
     except HTTPError as error:
         raise NackException(
             "Error occurred when querying MediaHaven",
             query_params=query_params,
             error=error,
             error_message=error.response.text,
+        )
+    except RequestException as error:
+        raise NackException(
+            "Error connecting to MediaHaven, retrying....",
+            error=error,
+            requeue=True,
         )
 
     if result.nr_of_results:
@@ -329,18 +329,18 @@ def handle_create_event(
         query = get_mediahaven_query(query_params)
         try:
             result = mediahaven_client.records.search(q=query)
-        except RequestException as error:
-            raise NackException(
-                "Error connecting to MediaHaven, retrying....",
-                error=error,
-                requeue=True,
-            )
         except HTTPError as error:
             raise NackException(
                 "Error occurred when querying MediaHaven",
                 query_params=query_params,
                 error=error,
                 error_message=error.response.text,
+            )
+        except RequestException as error:
+            raise NackException(
+                "Error connecting to MediaHaven, retrying....",
+                error=error,
+                requeue=True,
             )
         if not result.nr_of_results:
             raise NackException(
@@ -375,12 +375,6 @@ def handle_create_event(
                 metadata_content_type=ContentType.XML.value,
                 reason=f"[s3-events-handler] Voeg relatie van {object_use} toe",
             )
-        except RequestException as error:
-            raise NackException(
-                "Error connecting to MediaHaven, retrying....",
-                error=error,
-                requeue=True,
-            )
         except HTTPError as error:
             raise NackException(
                 "Error occurred when updating metadata of collateral",
@@ -388,6 +382,12 @@ def handle_create_event(
                 sidecar=essence_update_sidecar,
                 error=error,
                 error_message=error.response.text,
+            )
+        except RequestException as error:
+            raise NackException(
+                "Error connecting to MediaHaven, retrying....",
+                error=error,
+                requeue=True,
             )
     else:
         # Handle essence
@@ -460,18 +460,18 @@ def delete_media_object(
     )
     try:
         mediahaven_client.records.delete(fragment_id, reason)
-    except RequestException as error:
-        raise NackException(
-            "Error connecting to MediaHaven, retrying....",
-            error=error,
-            requeue=True,
-        )
     except HTTPError as error:
         raise NackException(
             f"Error when deleting MH fragment with fragment ID: {fragment_id}",
             fragment_id=fragment_id,
             error=error,
             error_message=error.response.text,
+        )
+    except RequestException as error:
+        raise NackException(
+            "Error connecting to MediaHaven, retrying....",
+            error=error,
+            requeue=True,
         )
 
 
@@ -512,18 +512,18 @@ def handle_remove_event(
     query = get_mediahaven_query(query_params, or_params=False)
     try:
         result = mediahaven_client.records.search(q=query)
-    except RequestException as error:
-        raise NackException(
-            "Error connecting to MediaHaven, retrying....",
-            error=error,
-            requeue=True,
-        )
     except HTTPError as error:
         raise NackException(
             "Error occurred when querying MediaHaven",
             query_params=query_params,
             error=error,
             error_message=error.response.text,
+        )
+    except RequestException as error:
+        raise NackException(
+            "Error connecting to MediaHaven, retrying....",
+            error=error,
+            requeue=True,
         )
 
     if not result.nr_of_results:
@@ -561,18 +561,18 @@ def handle_remove_event(
         query_media_ids = get_mediahaven_query(query_params_media_ids)
         try:
             response = mediahaven_client.records.search(q=query_media_ids)
-        except RequestException as error:
-            raise NackException(
-                "Error connecting to MediaHaven, retrying....",
-                error=error,
-                requeue=True,
-            )
         except HTTPError as error:
             raise NackException(
                 "Error occurred when querying MediaHaven",
                 query_params=query_params_media_ids,
                 error=error,
                 error_message=error.response.text,
+            )
+        except RequestException as error:
+            raise NackException(
+                "Error connecting to MediaHaven, retrying....",
+                error=error,
+                requeue=True,
             )
 
         # Collect the Fragment IDs of the collaterals. The Media ID is used in the delete reason.
