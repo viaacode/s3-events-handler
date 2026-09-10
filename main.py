@@ -127,11 +127,39 @@ def construct_essence_sidecar(event, pid, cp_name):
     )
 
 
-def construct_collateral_sidecar(event, pid, media_id, cp_name, object_use):
+def create_collateral_title(pid: str, collateral_type: str) -> str:
+    """Generate a human readable title for the collateral."""
+
+    # 1. Initialise title with a base string (applicable to all collaterals)
+    title = f"Collateral: pid: {pid}"
+
+    # 2. If we have a human readable version of the collateral type, append this after
+    # the base title.
+    collateral_type_to_title_text_map = {
+        "openOt": "subtitles/openOT",
+        "closedOt": "subtitles/closedOT",
+    }
+    collateral_type_title_text = collateral_type_to_title_text_map.get(collateral_type)
+
+    if collateral_type_title_text is not None:
+        collateral_info = f"({collateral_type_title_text})"
+        title = " ".join([title, collateral_info])
+
+    return title
+
+
+def construct_collateral_sidecar(
+    event,
+    pid,
+    media_id,
+    cp_name,
+    object_use,
+    collateral_type
+):
     s3_object_key = get_from_event(event, "object_key")
 
     root = etree.Element("MediaHAVEN_external_metadata")
-    etree.SubElement(root, "title").text = f"Collateral: pid: {pid}"
+    etree.SubElement(root, "title").text = create_collateral_title(pid, collateral_type)
 
     description = f"""Subtitles for essence:
     - filename: {s3_object_key}
@@ -336,7 +364,7 @@ def handle_create_event(
             object_use = "collateral"
 
         sidecar_xml = construct_collateral_sidecar(
-            event, item_pid, media_id, cp_name, object_use
+            event, item_pid, media_id, cp_name, object_use, collateral_type
         )
 
         essence_update_sidecar = construct_fragment_update_sidecar(pid)

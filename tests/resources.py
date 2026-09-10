@@ -352,6 +352,68 @@ MOCK_MEDIAHAVEN_EXTERNAL_METADATA_COLLATERAL = """<?xml version='1.0' encoding='
 </MediaHAVEN_external_metadata>
 """
 
+MOCK_MEDIAHAVEN_EXTERNAL_OPEN_OT_COLLATERAL = """<?xml version='1.0' encoding='UTF-8'?>
+<MediaHAVEN_external_metadata>
+  <title>Collateral: pid: test_pid (subtitles/openOT)</title>
+  <description>Subtitles for essence:
+    - filename: TYPE/MEDIAID/blabla.xif
+    - CP: VRT
+    </description>
+  <MDProperties>
+    <CP>VRT</CP>
+    <CP_id>OR-rf5kf25</CP_id>
+    <sp_name>s3</sp_name>
+    <PID>test_pid</PID>
+    <s3_domain>s3</s3_domain>
+    <s3_bucket>mam-collaterals</s3_bucket>
+    <s3_object_key>TYPE/MEDIAID/blabla.xif</s3_object_key>
+    <s3_object_owner>Object Owner CN+OR-id</s3_object_owner>
+    <dc_identifier_localid>media_id</dc_identifier_localid>
+    <object_level>file</object_level>
+    <object_use>subtitle</object_use>
+    <ie_type>n/a</ie_type>
+    <dc_identifier_localids>
+      <Bestandsnaam>TYPE/MEDIAID/blabla.xif</Bestandsnaam>
+    </dc_identifier_localids>
+    <md5>1234abcd1234abcd1234abcd1234abcd</md5>
+    <dc_relations>
+      <is_verwant_aan>test_pid</is_verwant_aan>
+    </dc_relations>
+  </MDProperties>
+</MediaHAVEN_external_metadata>
+"""
+
+MOCK_MEDIAHAVEN_EXTERNAL_CLOSED_OT_COLLATERAL = """<?xml version='1.0' encoding='UTF-8'?>
+<MediaHAVEN_external_metadata>
+  <title>Collateral: pid: test_pid (subtitles/closedOT)</title>
+  <description>Subtitles for essence:
+    - filename: TYPE/MEDIAID/blabla.xif
+    - CP: VRT
+    </description>
+  <MDProperties>
+    <CP>VRT</CP>
+    <CP_id>OR-rf5kf25</CP_id>
+    <sp_name>s3</sp_name>
+    <PID>test_pid</PID>
+    <s3_domain>s3</s3_domain>
+    <s3_bucket>mam-collaterals</s3_bucket>
+    <s3_object_key>TYPE/MEDIAID/blabla.xif</s3_object_key>
+    <s3_object_owner>Object Owner CN+OR-id</s3_object_owner>
+    <dc_identifier_localid>media_id</dc_identifier_localid>
+    <object_level>file</object_level>
+    <object_use>subtitle</object_use>
+    <ie_type>n/a</ie_type>
+    <dc_identifier_localids>
+      <Bestandsnaam>TYPE/MEDIAID/blabla.xif</Bestandsnaam>
+    </dc_identifier_localids>
+    <md5>1234abcd1234abcd1234abcd1234abcd</md5>
+    <dc_relations>
+      <is_verwant_aan>test_pid</is_verwant_aan>
+    </dc_relations>
+  </MDProperties>
+</MediaHAVEN_external_metadata>
+"""
+
 MOCK_MEDIAHAVEN_FRAGMENT_UPDATE = """<?xml version='1.0' encoding='UTF-8'?>
 <MediaHAVEN_external_metadata>
   <MDProperties>
