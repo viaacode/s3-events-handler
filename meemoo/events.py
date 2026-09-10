@@ -9,7 +9,6 @@
 #
 
 # System imports
-import os
 
 # Third-party imports
 import pika
@@ -31,7 +30,6 @@ class Events(object):
         self.credentials = self._init_credentials()
         self.connection = self._init_connection()
         self.channel = self._init_channel()
-        self._declare_queue()
 
     def _init_credentials(self):
         """"""
@@ -54,20 +52,6 @@ class Events(object):
         channel = self.connection.channel()
         channel.basic_qos(prefetch_count=1)
         return channel
-
-    def _declare_queue(self):
-        self.channel.queue_declare(queue=self.queue, durable=True)
-
-        if self.exchange:
-            self.channel.exchange_declare(
-                exchange=self.exchange, exchange_type="direct"
-            )
-            self.channel.queue_bind(
-                exchange=self.exchange, queue=self.queue, routing_key=self.queue
-            )
-
-        # Turn on delivery confirmations if need be
-        # ~ channel.confirm_delivery()
 
     def basic_consume(self):
         return self.channel.basic_consume(
